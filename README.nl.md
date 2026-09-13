@@ -3,7 +3,7 @@
 [![Go](https://img.shields.io/badge/Go-1.24+-00ADD8?logo=go)](https://go.dev)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-**Andere talen:** [English](README.en.md) · [Русский](README.md) · [简体中文](README.zh-CN.md)
+**Andere talen:** [English](README.en.md) · [Русский](README.md) · [简体中文](README.zh-CN.md) · [Pirate 🏴‍☠️](README.pirate.md)
 
 Een driver voor de thermotransfer-labelprinter **NIIMBOT N1** via Bluetooth LE.
 Geschreven in Go, werkt vanaf de opdrachtregel: tekst en afbeeldingen printen,
