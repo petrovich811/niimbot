@@ -207,7 +207,9 @@ and the white canvas background.
 
 - discovery, connection and handshake;
 - model id `3586`, serial number, firmware `3.13`, battery;
-- **label printing** — full cycle: `page 1, print 100%, feed 100%`;
+- **text printing** — full cycle: `page 1, print 100%, feed 100%`;
+- **image printing** — a frame, text and a corner marker landed exactly as
+  in the preview;
 - **orientation** — the printout reads correctly: text along the label, not
   mirrored. Confirmed on paper after the two fixes described above;
 - both orientation bugs showed up only on paper — there is no other way to
@@ -216,8 +218,7 @@ and the white canvas background.
 **Not verified yet:**
 
 - printing on label types other than `withgaps`;
-- other NIIMBOT models (they need their own printhead parameters);
-- image printing (`image`) — same code path as text, but not yet tried on paper.
+- other NIIMBOT models (they need their own printhead parameters).
 
 ## Acknowledgements
 
