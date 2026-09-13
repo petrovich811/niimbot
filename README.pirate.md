@@ -29,6 +29,7 @@ $ niimbot text "Pump" "12A-5"
 | `niimbot image file.png` | print a picture |
 | `niimbot preview "line"` | draw the mock-up **without printin'** — see what would go on the label |
 | `niimbot testpage` | the printer's own test page (to check the line be live) |
+| `niimbot gui` | a window in yer browser: **fleets o' labels**, templates, mock-ups |
 | `niimbot scan` | hunt fer the printer over the air |
 
 ## What Ye Need Aboard
@@ -83,6 +84,64 @@ go build -o niimbot .
 | `--copies N` | how many copies | `1` |
 | `--flip` | turn the whole lot 180° | off |
 | `-v=false` | hold yer tongue about the protocol | on |
+
+## The Cap'n's Window
+
+```bash
+./niimbot gui              # serves http://127.0.0.1:8765 an' opens yer browser
+./niimbot gui --port 9000  # some other port
+./niimbot gui --no-browser # the server alone, no window
+```
+
+The window be **baked into the binary herself** (`embed` + `net/http`) — no GUI
+framework, no extra ballast in the hold. The printin' logic be not writ twice:
+the window calls the very same functions the command line does.
+
+| What she offers | What it be for |
+|---|---|
+| **The «Fleet» tab** | a list o' labels, one to a line; printed as a single job, one after another |
+| **Load a CSV** | takes the first column (save Excel as CSV) |
+| **The mock-up** | the label's likeness afore ye waste one |
+| **Templates** | saved sets o' riggin' for the usual work: cable labels, gear plates |
+| **Status** | model, serial, battery, label kind, what be left on the roll an' the ribbon |
+| **Progress** | «N of M printed» while the fleet sails |
+
+A `|` in a line starts a new line on one label: `Pump|12A-5` lays two lines down.
+Templates live in `~/.config/niimbot/templates.json`.
+
+### A Fleet o' Many-Lined Labels: Template + Cargo
+
+When every label in the fleet wants more than one line, hoist a **label template**
+an' a **cargo table** — the way the proper label-folk do it.
+
+**The template:**
+
+```
+{1}
+{2}
+{3}
+```
+
+**The cargo** (one record to a line, columns split by `;`):
+
+```
+Centrifugal pump;12A-5;14.09.2026
+Gate valve;12B-1;14.09.2026
+Control valve;12B-2;14.09.2026
+```
+
+That prints **three labels o' three lines each**: `{1}`, `{2}`, `{3}` be the
+columns o' the record.
+
+| Rule | How she works |
+|---|---|
+| Template lines | every line o' the template becomes a line on the label; empty ones walk the plank |
+| Columns | split by `;`, `,` or a tab — whichever boards first |
+| Usin' a column twice | `TAG {2}` puts a column anywhere in the line |
+| No template | one cargo line be one label, an' a `\|` in her breaks the line |
+
+A CSV from Excel sails straight in: load the file, set the template, an' the whole
+table goes to the printer as a fleet.
 
 ## Labels an' Which Way Up She Prints
 
@@ -192,7 +251,25 @@ bit 7 o' the first byte be the outermost dot o' the head. Rows white as bone sai
 with their own command (`0x84`) — shorter an' quicker.
 
 Print status (answer `0xB3`): `page(2) | print progress % | feed progress %`.
-The printin' be done when the page be reached an' both progress marks read 100.
+The printin' be done when both progress marks read 100.
+
+### Two Subtleties o' Fleet Printin'
+
+Both found on real hardware, an' both cost wasted labels:
+
+**1. Bitmap rows want a pause between 'em** (4 ms here). `writeWithoutResponse`
+shoves the cargo faster than the printer can stow it, an' she answers with a data
+error: answer `0xDB`, code `6`. Without the pause the second label o' the fleet
+already founders.
+
+**2. Every label must wait for the previous page to finish printin'.** While the
+printer still prints, the next label counts as extra cargo an' she answers
+`0xDB`/`6` again. The driver polls the status an' waits for two readings in a row
+o' «100% print an' feed» afore sendin' the next one.
+
+It also helps that **error `0xDB` can be read**: the driver spells out the code
+(cover open, no paper, overheat, no ribbon an' so on) an' stops the job instead o'
+sittin' in the fog till a timeout.
 
 ### Two Kraken in the Water
 

@@ -26,6 +26,7 @@ $ niimbot text "Pomp" "12A-5"
 | `niimbot image bestand.png` | een afbeelding printen |
 | `niimbot preview "regel"` | een proefontwerp maken **zonder te printen** |
 | `niimbot testpage` | de ingebouwde testpagina van de printer |
+| `niimbot gui` | grafische interface in de browser: **reeksen etiketten**, sjablonen, proefontwerp |
 | `niimbot scan` | de printer in de buurt zoeken |
 
 ## Vereisten
@@ -80,6 +81,64 @@ go build -o niimbot .
 | `--copies N` | aantal exemplaren | `1` |
 | `--flip` | inhoud 180° draaien | uit |
 | `-v=false` | geen uitgebreide protocoluitvoer | aan |
+
+## Grafische interface
+
+```bash
+./niimbot gui              # serveert http://127.0.0.1:8765 en opent de browser
+./niimbot gui --port 9000  # een andere poort
+./niimbot gui --no-browser # alleen de server
+```
+
+De interface zit **in de binary zelf** (`embed` + `net/http`) — geen GUI-framework,
+geen extra afhankelijkheden. De printlogica wordt niet gedupliceerd: de interface
+roept dezelfde functies aan als de opdrachtregel.
+
+| Wat er is | Waarvoor |
+|---|---|
+| **Tab «Reeks»** | een lijst etiketten, één per regel; als één opdracht achter elkaar geprint |
+| **CSV laden** | de eerste kolom wordt gebruikt (sla Excel op als CSV) |
+| **Proefontwerp** | het ontwerp van het etiket vóór het printen |
+| **Sjablonen** | bewaarde sets instellingen voor vaste taken: kabel-etiketten, apparatuurplaatjes |
+| **Status** | model, serienummer, accu, labeltype, rest van rol en lint |
+| **Voortgang** | «N van M geprint» tijdens een reeks |
+
+Een `|` in een regel begint een nieuwe regel binnen één etiket: `Pomp|12A-5` zet
+twee regels op het etiket. Sjablonen staan in `~/.config/niimbot/templates.json`.
+
+### Een reeks etiketten met meerdere regels: sjabloon + gegevens
+
+Als elk etiket in een reeks uit meerdere regels moet bestaan, gebruik dan een
+**etikeksjabloon** en een **gegevenstabel** — zoals echte etiketsoftware werkt.
+
+**Sjabloon:**
+
+```
+{1}
+{2}
+{3}
+```
+
+**Gegevens** (één record per regel, kolommen met `;`):
+
+```
+Centrifugaalpomp;12A-5;14.09.2026
+Schuifafsluiter;12B-1;14.09.2026
+Regelklep;12B-2;14.09.2026
+```
+
+Dat print **drie etiketten van elk drie regels**: `{1}`, `{2}`, `{3}` zijn de
+kolommen van het record.
+
+| Regel | Hoe het werkt |
+|---|---|
+| Sjabloonregels | elke regel van het sjabloon wordt één regel op het etiket; lege regels vervallen |
+| Kolommen | gescheiden door `;`, `,` of een tab — wat het eerst komt |
+| Kolom hergebruiken | `TAG {2}` zet een kolom waar dan ook in de regel |
+| Zonder sjabloon | één dataregel is één etiket, en `\|` erin breekt de regel |
+
+Een CSV uit Excel werkt dus direct: bestand laden, sjabloon instellen, en de hele
+tabel gaat als reeks naar de printer.
 
 ## Etiketten en oriëntatie
 
@@ -191,7 +250,25 @@ waarbij bit 7 van de eerste byte de uiterste punt van de printkop is. Volledig
 witte regels gaan met een apart commando (`0x84`) — dat is korter en sneller.
 
 Printstatus (antwoord `0xB3`): `pagina(2) | voortgang printen % | voortgang doorvoer %`.
-Het printen is klaar als de pagina is bereikt en beide percentages 100 zijn.
+Het printen is klaar als beide percentages 100 zijn.
+
+### Twee subtiliteiten bij het printen van reeksen
+
+Beide gevonden op echte hardware, en beide kostten verspilde etiketten:
+
+**1. Tussen bitmapregels is een pauze nodig** (hier 4 ms). `writeWithoutResponse`
+duwt gegevens sneller dan de printer ze kan verwerken, en hij antwoordt met een
+gegevensfout: antwoord `0xDB`, code `6`. Zonder de pauze mislukt het tweede etiket
+van een reeks al.
+
+**2. Elk etiket moet wachten tot de vorige pagina klaar is met printen.** Terwijl
+de printer nog print, geldt het volgende etiket als extra gegevens en antwoordt
+hij weer `0xDB`/`6`. De driver pollt de status en wacht op twee opeenvolgende
+metingen van «100 % printen en doorvoer» voordat het volgende etiket gaat.
+
+Het helpt ook dat **fout `0xDB` leesbaar is**: de driver vertaalt de code (klep
+open, geen papier, oververhitting, geen lint enzovoort) en stopt de opdracht in
+plaats van stil op een timeout te wachten.
 
 ### Twee valkuilen
 
