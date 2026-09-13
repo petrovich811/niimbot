@@ -1,0 +1,193 @@
+# NIIMBOT N1 — label printer driver for Linux
+
+[![Go](https://img.shields.io/badge/Go-1.24+-00ADD8?logo=go)](https://go.dev)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+**Русская версия:** [README.md](README.md)
+
+A Bluetooth LE driver for the **NIIMBOT N1** thermal-transfer label printer,
+written in Go. Prints text and images from the command line, reports printer
+status, and can render a preview without wasting a label.
+
+No vendor app, no phone, no account — just Linux, Bluetooth and one command.
+
+```console
+$ niimbot text "Pump" "12A-5"
+```
+
+## Features
+
+| Command | Description |
+|---|---|
+| `niimbot info` | printer status: model id, serial number, firmware, density, battery |
+| `niimbot text "line" "..."` | print text (each argument is a separate line) |
+| `niimbot image file.png` | print an image |
+| `niimbot preview "line"` | render the label **without printing** |
+| `niimbot testpage` | built-in printer test page (connection check) |
+| `niimbot scan` | discover the printer over Bluetooth |
+
+## Requirements
+
+- **Linux** with BlueZ (tested on Debian/Ubuntu; uses the BlueZ D-Bus API);
+- **Go 1.24+** to build;
+- a font with Cyrillic support (DejaVu, Noto or Liberation — auto-detected);
+- a **NIIMBOT N1** printer (other models need their own printhead parameters — see "Protocol").
+
+## Install
+
+```bash
+go install github.com/petrovich811/niimbot@latest
+```
+
+Or from source:
+
+```bash
+git clone https://github.com/petrovich811/niimbot.git
+cd niimbot
+go build -o niimbot .
+```
+
+## Usage
+
+```bash
+# printer status
+./niimbot info
+
+# render only (saved to /tmp/niimbot_label_preview.png)
+./niimbot preview "Pump" "12A-5"
+
+# print text
+./niimbot text "Pump" "12A-5"
+
+# print an image
+./niimbot image logo.png
+
+# darker, two copies
+./niimbot text "TAG" "inv. 4210" --density 3 --copies 2
+```
+
+### Flags
+
+| Flag | Meaning | Default |
+|---|---|---|
+| `--address MAC` | printer address; otherwise discovers by name `N1-` | auto |
+| `--length mm` | label length along the feed direction | `30` |
+| `--font px` | font size; `0` fits the label automatically | `0` |
+| `--density 1..3` | print density | `2` |
+| `--label` | label type: `withgaps`, `continuous`, `black`, `perforated`, `transparent`, `pvctag`, `blackmarkgap`, `heatshrink` | `withgaps` |
+| `--copies N` | number of copies | `1` |
+| `--flip` | rotate content by 180° | off |
+| `-v=false` | quiet protocol log | on |
+
+## Labels and orientation
+
+The N1 printhead is **96 dots** wide — **12 mm** at 203 dpi. The author uses
+**EW14×30** labels: 14 mm wide, 30 mm along the feed direction
+(12 mm printable area, centred).
+
+**Text runs along the label.** Content is rendered in "reading orientation"
+(width = label length, height = printhead width) and then transposed into
+printer rows. Drawing it "as on screen" makes the text run *across* the label —
+that was the author's first mistake, confirmed by an actual print.
+
+If the label comes out upside down, add `--flip`.
+
+## Protocol
+
+Packet layout:
+
+```
+55 55 | command | length | data | XOR checksum | AA AA
+```
+
+Multi-byte integers are **big-endian**. The checksum is the XOR of the command,
+the length and all data bytes.
+
+Print sequence:
+
+```
+density (0x21) → label type (0x23) → print start (0x01) →
+page start (0x03) → page size (0x13) → bitmap rows (0x85) →
+page end (0xE3) → status polling (0xA3) → print end (0xF3)
+```
+
+A bitmap row is `position(2) | black-pixel counters(3) | repeats(1) | data(12)`,
+where bit 7 of the first byte is the leftmost printhead dot. Fully blank rows
+are sent with a dedicated command (`0x84`) — shorter and faster.
+
+Print status (response `0xB3`): `page(2) | print progress % | feed progress %`.
+Printing is done when the page count is reached and both progress values are 100.
+
+### Two traps worth knowing
+
+**1. The printer exposes two BLE services, and only one of them works.**
+
+| Service | What it is |
+|---|---|
+| `e7810a71-73ae-499d-8c15-faa9aef0c3f2` | **native NIIMBOT service** — the firmware listens here; characteristic `bef8d6c9-9c21-4c9e-b632-bd58c1009f9f` |
+| `49535343-fe7d-4ae5-8fa9-9fafd205e455` | a transparent UART — matches the expected properties (`notify` + `write`) but **never answers any command** |
+
+Connecting to the UART looks successful while the printer stays completely
+silent. This is where most debugging time goes.
+
+**2. BlueZ must have seen the device first.**
+
+Without a prior scan, connecting fails with a D-Bus error:
+
+```
+Method "Get" with signature "ss" on interface "org.freedesktop.DBus.Properties" doesn't exist
+```
+
+Also note: with the Linux backend of `tinygo.org/x/bluetooth`,
+`Adapter.Scan` **blocks until `StopScan`** — run it in a separate goroutine or
+the program will hang.
+
+### Other models
+
+Parameters are hard-coded for the N1: model id `3586`, printhead `96` dots,
+density `1..3`. For another model, change these in `protocol.go` — the
+model-to-parameters table lives in
+[NiimBlueLib](https://github.com/MultiMote/niimbluelib/blob/master/src/printer_models.ts).
+
+## Tests
+
+```bash
+go test ./...
+```
+
+The tests verify packet construction **against bytes captured from a real
+printer** (handshake `5555c10101c1aaaa`, model query `555540010849aaaa`),
+response parsing, partial-packet reassembly, pixel counters, row orientation
+and the white canvas background.
+
+## Verified vs. not verified
+
+**Verified on a real N1 (GA24110447):**
+
+- discovery, connection and handshake — by this program;
+- model id `3586`, serial number, firmware `3.13`;
+- label printing — by the first, Python version of the driver (3 labels,
+  status `page 1, print 100%, feed 100%`);
+- that print revealed the text was running across the label instead of along it.
+
+**Not yet confirmed physically:** printing with the current Go version and the
+corrected orientation. It uses the same print path as the verified version and
+is covered by tests, but the output should be checked on paper.
+
+## Acknowledgements
+
+The protocol was reverse-engineered from the open-source
+**[NiimBlueLib](https://github.com/MultiMote/niimbluelib)** (MIT) — the most
+accurate open implementation of the NIIMBOT protocol. Packet layout, command
+codes, pixel-counter splitting and model parameters come from there.
+The code in this driver was written from scratch in Go.
+
+## Disclaimer
+
+This project is not affiliated with or endorsed by NIIMBOT. "NIIMBOT" and model
+names belong to their respective owners. The printer is driven over a
+reverse-engineered protocol — use at your own risk.
+
+## License
+
+[MIT](LICENSE).

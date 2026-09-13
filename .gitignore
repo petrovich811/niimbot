@@ -1,0 +1,10 @@
+# собранный бинарник
+/niimbot
+
+# черновик на Python и его окружение
+/python-draft/
+/venv/
+
+# макеты этикеток
+/niimbot_label_preview.png
+/preview/
