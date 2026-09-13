@@ -56,6 +56,8 @@ func main() {
 	density := fs.Int("density", 2, "плотность 1..3")
 	label := fs.String("label", "", "тип этикетки; пусто — определить по метке рулона")
 	copies := fs.Int("copies", 1, "количество копий")
+	port := fs.Int("port", 8765, "порт веб-интерфейса (команда gui); 8080 занят SearXNG")
+	noBrowser := fs.Bool("no-browser", false, "не открывать браузер (команда gui)")
 	if err := fs.Parse(flagArgs); err != nil {
 		fatal(err)
 	}
@@ -75,6 +77,11 @@ func main() {
 			fatal(err)
 		}
 		fmt.Println(mac)
+		return
+	case "gui":
+		if err := startGUI(*addr, *port, !*noBrowser, *verbose); err != nil {
+			fatal(err)
+		}
 		return
 	case "preview":
 		// Рендер без принтера: удобно проверить макет до печати.
@@ -252,6 +259,19 @@ func labelTypeName(id byte) string {
 	return ""
 }
 
+// checkLabelName проверяет тип этикетки без подсказок про флаги —
+// для графического интерфейса, где флагов нет.
+func checkLabelName(label string) error {
+	id, ok := labelTypes[label]
+	if !ok {
+		return fmt.Errorf("неизвестный тип этикетки %q", label)
+	}
+	if _, ok := labelTypesN1[id]; !ok {
+		return fmt.Errorf("N1 не поддерживает тип %q. Доступны: withgaps, continuous, transparent, blackmarkgap, heatshrink", label)
+	}
+	return nil
+}
+
 // checkLabelType проверяет имя типа этикетки и поддержку его моделью N1.
 func checkLabelType(label string) error {
 	id, ok := labelTypes[label]
@@ -374,6 +394,7 @@ func usage() {
   niimbot text "строка" "..."   напечатать текст
   niimbot image file.png        напечатать картинку
   niimbot testpage              встроенная тестовая страница
+  niimbot gui                   графический интерфейс (серии, шаблоны, предпросмотр)
 
 Флаги: --address MAC   --length мм   --font точек   --density 1..3
        --copies N   --flip   -v=false

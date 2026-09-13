@@ -25,6 +25,7 @@ $ niimbot text "Pump" "12A-5"
 | `niimbot image file.png` | print an image |
 | `niimbot preview "line"` | render the label **without printing** |
 | `niimbot testpage` | built-in printer test page (connection check) |
+| `niimbot gui` | browser UI: **label series**, templates, live preview |
 | `niimbot scan` | discover the printer over Bluetooth |
 
 ## Requirements
@@ -79,6 +80,30 @@ go build -o niimbot .
 | `--copies N` | number of copies | `1` |
 | `--flip` | rotate content by 180° | off |
 | `-v=false` | quiet protocol log | on |
+
+## Graphical interface
+
+```bash
+./niimbot gui              # serves http://127.0.0.1:8765 and opens the browser
+./niimbot gui --port 9000  # another port
+./niimbot gui --no-browser # server only
+```
+
+The interface is **embedded in the binary** (`embed` + `net/http`) — no GUI
+framework, no extra dependencies. Printing logic is not duplicated: the UI calls
+the same functions the command line does.
+
+| What it offers | Why |
+|---|---|
+| **"Series" tab** | a list of labels, one per line; printed as a single job, back to back |
+| **CSV upload** | takes the first column (save Excel as CSV) |
+| **Preview** | the label mock-up before printing |
+| **Templates** | saved setting sets for typical jobs: cable labels, equipment tags |
+| **Status** | model, serial, battery, label type, labels and ribbon left |
+| **Progress** | "printed N of M" while a series runs |
+
+A `|` in a line starts a new line inside one label: `Pump|12A-5` puts two lines
+on the label. Templates live in `~/.config/niimbot/templates.json`.
 
 ## Labels and orientation
 
@@ -188,7 +213,24 @@ where bit 7 of the first byte is the leftmost printhead dot. Fully blank rows
 are sent with a dedicated command (`0x84`) — shorter and faster.
 
 Print status (response `0xB3`): `page(2) | print progress % | feed progress %`.
-Printing is done when the page count is reached and both progress values are 100.
+Printing is done when both progress values are 100.
+
+### Two subtleties of series printing
+
+Both were found on real hardware, and both cost wasted labels:
+
+**1. Bitmap rows need a pause between them** (4 ms here). `writeWithoutResponse`
+pushes data faster than the printer can take it, and it answers with a data error:
+response `0xDB`, code `6`. Without the pause the second label of a series already fails.
+
+**2. Each label must wait for the previous page to finish printing.** While the
+printer is still printing, the next label counts as extra data and it answers
+`0xDB`/`6` again. The driver polls the status and waits for two consecutive
+readings of "100% print and feed" before sending the next label.
+
+It also helps that **error `0xDB` is readable**: the driver decodes the code
+(cover open, no paper, overheat, no ribbon and so on) and stops the job instead
+of silently waiting for a timeout.
 
 ### Two traps worth knowing
 

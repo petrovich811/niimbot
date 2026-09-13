@@ -31,11 +31,30 @@ type Printer struct {
 	device bluetooth.Device
 	char   bluetooth.DeviceCharacteristic
 
-	mu      sync.Mutex
-	buf     []byte
-	waiters []waiter
+	mu        sync.Mutex
+	buf       []byte
+	waiters   []waiter
+	lastError byte // код из ответа 0xdb, 0 если ошибки не было
 
 	verbose bool
+}
+
+// printErrors — расшифровка кодов ошибки печати (ответ 0xdb).
+var printErrors = map[byte]string{
+	0x01: "открыта крышка",
+	0x02: "нет бумаги",
+	0x03: "низкий заряд батареи",
+	0x04: "исключение батареи",
+	0x05: "отменено пользователем",
+	0x06: "ошибка данных (принтер не успел принять — добавьте паузу между строками)",
+	0x07: "перегрев",
+	0x08: "бумага закончилась",
+	0x09: "принтер занят",
+	0x0a: "нет печатающей головки",
+	0x0b: "низкая температура",
+	0x0c: "головка не закреплена",
+	0x0d: "нет ленты (риббона)",
+	0x0e: "неподходящая лента",
 }
 
 func (p *Printer) log(format string, args ...any) {
@@ -244,6 +263,18 @@ func (p *Printer) setup() error {
 		p.mu.Unlock()
 		for _, pkt := range pkts {
 			p.log("  ← %s", pkt.String())
+			// Ошибку печати (0xdb) запоминаем: иначе она проходит незаметно
+			// и драйвер молча ждёт до таймаута.
+			if pkt.Cmd == respPrintError && len(pkt.Data) > 0 {
+				p.mu.Lock()
+				p.lastError = pkt.Data[0]
+				p.mu.Unlock()
+				why := printErrors[pkt.Data[0]]
+				if why == "" {
+					why = "неизвестный код"
+				}
+				p.log("  ⚠️ принтер сообщил об ошибке: %s (0x%02x)", why, pkt.Data[0])
+			}
 			p.mu.Lock()
 			ws := p.waiters
 			p.mu.Unlock()
@@ -366,29 +397,35 @@ func (p *Printer) PrintTestPage() error {
 	return err
 }
 
-// PrintRows печатает готовые строки битмапа.
-func (p *Printer) PrintRows(rows []Row, density, labelType byte, copies int) error {
-	height := len(rows)
-	p.log("  печать: %d строк, головка %d точек, плотность %d, тип этикетки %d",
-		height, printheadPixels, density, labelType)
+// takeError возвращает код ошибки печати и сбрасывает его.
+func (p *Printer) takeError() byte {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	e := p.lastError
+	p.lastError = 0
+	return e
+}
 
-	// Подготовка
-	p.Send(cmdSetDensity, []byte{density}, []byte{respSetDensity}, 2*time.Second)
-	p.Send(cmdSetLabelType, []byte{labelType}, nil, 0)
-	// printStart: страницы(2) + 4 нуля + цвет
-	p.Send(cmdPrintStart, append(u16(copies), 0, 0, 0, 0, 0), nil, 0)
-	time.Sleep(150 * time.Millisecond)
+// errorText расшифровывает код ошибки печати.
+func errorText(code byte) string {
+	if t := printErrors[code]; t != "" {
+		return t
+	}
+	return fmt.Sprintf("неизвестная ошибка (код %d)", code)
+}
 
-	p.Send(cmdPageStart, nil, []byte{respPageStart}, 2*time.Second)
-	// setPageSize: rows(2) + cols(2) + copies(2)
-	pageSize := append(u16(height), u16(printheadPixels)...)
-	pageSize = append(pageSize, u16(copies)...)
-	p.Send(cmdSetPageSize, pageSize, nil, 0)
-	time.Sleep(100 * time.Millisecond)
-
+// sendRows отправляет строки одной этикетки.
+//
+// Между строками обязательна пауза: writeWithoutResponse отдаёт данные
+// быстрее, чем принтер успевает их принять, и он отвечает ошибкой
+// PrinterErrorCode.DataError (0xdb, код 6). Проверено на живом N1 — без
+// паузы серия срывается. В черновике на Python пауза была 4 мс.
+func (p *Printer) sendRows(rows []Row) error {
+	const rowDelay = 4 * time.Millisecond
 	for i, row := range rows {
 		if row == nil {
 			p.Send(cmdPrintEmptyRow, append(u16(i), 1), nil, 0)
+			time.Sleep(rowDelay)
 			continue
 		}
 		_, parts := countPixels(row, printheadPixels)
@@ -398,13 +435,89 @@ func (p *Printer) PrintRows(rows []Row, density, labelType byte, copies int) err
 		if err := p.sendBitmapRow(payload); err != nil {
 			return err
 		}
-		if i > 0 && i%32 == 0 {
-			p.log("    … %d/%d строк", i, height)
-		}
+		time.Sleep(rowDelay)
 	}
+	return nil
+}
 
+// beginJob готовит задание печати на total страниц.
+func (p *Printer) beginJob(total int, density, labelType byte) {
+	p.Send(cmdSetDensity, []byte{density}, []byte{respSetDensity}, 2*time.Second)
+	p.Send(cmdSetLabelType, []byte{labelType}, nil, 0)
+	// printStart: страницы(2) + 4 нуля + цвет
+	p.Send(cmdPrintStart, append(u16(total), 0, 0, 0, 0, 0), nil, 0)
+	time.Sleep(150 * time.Millisecond)
+}
+
+// beginPage открывает страницу и задаёт её размер. copies — копий на странице.
+func (p *Printer) beginPage(height, copies int) {
+	p.Send(cmdPageStart, nil, []byte{respPageStart}, 2*time.Second)
+	pageSize := append(u16(height), u16(printheadPixels)...)
+	pageSize = append(pageSize, u16(copies)...)
+	p.Send(cmdSetPageSize, pageSize, nil, 0)
+	time.Sleep(60 * time.Millisecond)
+}
+
+// PrintRows печатает одну этикетку в заданном числе копий.
+func (p *Printer) PrintRows(rows []Row, density, labelType byte, copies int) error {
+	height := len(rows)
+	p.log("  печать: %d строк, головка %d точек, плотность %d, тип этикетки %d",
+		height, printheadPixels, density, labelType)
+
+	p.beginJob(copies, density, labelType)
+	p.beginPage(height, copies)
+	if err := p.sendRows(rows); err != nil {
+		return err
+	}
 	p.Send(cmdPageEnd, nil, []byte{respPageEnd}, 3*time.Second)
 	return p.waitFinished(copies)
+}
+
+// PrintPages печатает серию этикеток ОДНИМ заданием: одна страница на этикетку.
+//
+// Так быстрее и аккуратнее, чем отдельное задание на каждую этикетку:
+// принтер не останавливается между ними. Копии разворачиваются в страницы —
+// то есть при copies=2 этикетки идут парами: A, A, B, B.
+//
+// progress вызывается после каждой отправленной страницы (done, total).
+func (p *Printer) PrintPages(pages [][]Row, density, labelType byte, copies int,
+	progress func(done, total int)) error {
+	if len(pages) == 0 {
+		return nil
+	}
+	if copies < 1 {
+		copies = 1
+	}
+
+	var flat [][]Row
+	for _, page := range pages {
+		for c := 0; c < copies; c++ {
+			flat = append(flat, page)
+		}
+	}
+	total := len(flat)
+	p.log("  серия: %d этикеток (%d шаблонов × %d копий), плотность %d, тип %d",
+		total, len(pages), copies, density, labelType)
+
+	p.beginJob(total, density, labelType)
+	t0 := time.Now()
+	for i, rows := range flat {
+		p.beginPage(len(rows), 1)
+		if err := p.sendRows(rows); err != nil {
+			return fmt.Errorf("этикетка %d из %d: %w", i+1, total, err)
+		}
+		p.Send(cmdPageEnd, nil, []byte{respPageEnd}, 3*time.Second)
+		// Ждём, пока принтер допечатает эту этикетку: иначе следующая
+		// уйдёт в занятый принтер и он ответит ошибкой данных.
+		if err := p.waitPageDone(20 * time.Second); err != nil {
+			return fmt.Errorf("этикетка %d из %d: %w", i+1, total, err)
+		}
+		if progress != nil {
+			progress(i+1, total)
+		}
+	}
+	p.log("  данные серии отправлены за %.1fs", time.Since(t0).Seconds())
+	return p.waitFinished(total)
 }
 
 // sendBitmapRow отправляет строку с повтором при переполнении MTU.
@@ -415,22 +528,70 @@ func (p *Printer) sendBitmapRow(payload []byte) error {
 	return err
 }
 
+// waitPageDone ждёт, пока принтер допечатает текущую страницу.
+//
+// Без этого следующая страница уходит в тот момент, когда принтер ещё занят
+// предыдущей, и он отвечает ошибкой данных (0xdb, код 6). Проверено на живом
+// N1: серия без ожидания срывается на второй этикетке.
+//
+// Требуем ДВА подряд замера «100 % печати и подачи»: сразу после конца
+// страницы принтер может ещё отдавать значение от предыдущей.
+func (p *Printer) waitPageDone(timeout time.Duration) error {
+	deadline := time.Now().Add(timeout)
+	time.Sleep(300 * time.Millisecond) // дать странице начаться
+	good := 0
+	for time.Now().Before(deadline) {
+		if code := p.takeError(); code != 0 {
+			return fmt.Errorf("принтер сообщил об ошибке: %s", errorText(code))
+		}
+		pkt, _ := p.Send(cmdPrintStatus, nil, []byte{respPrintStatus}, 2*time.Second)
+		if pkt != nil && len(pkt.Data) >= 4 {
+			printed, fed := int(pkt.Data[2]), int(pkt.Data[3])
+			if printed >= 100 && fed >= 100 {
+				good++
+				if good >= 2 {
+					return nil
+				}
+			} else {
+				good = 0
+			}
+		} else {
+			good = 0 // принтер занят и не отвечает — значит, ещё печатает
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
+	return fmt.Errorf("страница не завершилась за %s", timeout)
+}
+
 // waitFinished опрашивает статус печати (0xa3).
 //
 // Ответ 0xb3: page(2 байта BE), прогресс печати (0..100), прогресс подачи (0..100).
+//
+// ВАЖНО: поле «страница» НЕ считает напечатанные страницы. Проверено на живом
+// N1: и для одной этикетки, и для серии из двух-трёх оно приходит равным 1.
+// Поэтому завершением считаем 100 % печати и подачи, а не номер страницы —
+// иначе серия никогда не «завершается» и драйвер висит до таймаута.
 func (p *Printer) waitFinished(pages int) error {
-	p.log("  ожидаю завершения печати …")
-	deadline := time.Now().Add(90 * time.Second)
+	p.log("  ожидаю завершения печати (страниц в задании: %d) …", pages)
+	deadline := time.Now().Add(120 * time.Second)
+	lastPg, lastPct := -1, -1
 	for time.Now().Before(deadline) {
 		pkt, err := p.Send(cmdPrintStatus, nil, []byte{respPrintStatus}, 2500*time.Millisecond)
 		if err != nil {
 			return err
 		}
+		if code := p.takeError(); code != 0 {
+			return fmt.Errorf("принтер сообщил об ошибке: %s", errorText(code))
+		}
 		if pkt != nil && len(pkt.Data) >= 4 {
 			pg := int(pkt.Data[0])<<8 | int(pkt.Data[1])
-			printed, fed := pkt.Data[2], pkt.Data[3]
-			if pg >= pages && printed >= 100 && fed >= 100 {
-				p.log("  ✅ напечатано страниц: %d", pg)
+			printed, fed := int(pkt.Data[2]), int(pkt.Data[3])
+			if pg != lastPg || printed != lastPct {
+				p.log("    статус: страница %d, печать %d%%, подача %d%%", pg, printed, fed)
+				lastPg, lastPct = pg, printed
+			}
+			if pg >= 1 && printed >= 100 && fed >= 100 {
+				p.log("  ✅ печать завершена (страница %d, 100%%)", pg)
 				return nil
 			}
 		}

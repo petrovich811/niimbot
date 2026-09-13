@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NIIMBOT N1 — печать этикеток</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="dot"></span>
+    <h1>NIIMBOT N1</h1>
+  </div>
+  <div id="status" class="status">читаю состояние…</div>
+  <button id="refresh" class="ghost">Обновить</button>
+</header>
+
+<main>
+  <!-- ЛЕВАЯ КОЛОНКА: что печатать -->
+  <section class="panel">
+    <div class="tabs">
+      <button class="tab active" data-mode="single">Одна этикетка</button>
+      <button class="tab" data-mode="series">Серия</button>
+    </div>
+
+    <div id="pane-single" class="pane">
+      <label>Текст этикетки
+        <textarea id="single-text" rows="3" placeholder="Насос|12А-5">Насос|12А-5</textarea>
+      </label>
+      <p class="hint">Разделитель <code>|</code> переносит текст на новую строку внутри этикетки.</p>
+    </div>
+
+    <div id="pane-series" class="pane hidden">
+      <label>Список этикеток — по одной в строке
+        <textarea id="series-text" rows="10" placeholder="Насос 1|12А-5&#10;Насос 2|12А-6&#10;Насос 3|12А-7"></textarea>
+      </label>
+      <div class="row">
+        <button id="csv-btn" class="ghost">Загрузить CSV</button>
+        <input type="file" id="csv-file" accept=".csv,.txt" hidden>
+        <span id="series-count" class="hint">0 этикеток</span>
+      </div>
+      <p class="hint">Из CSV берётся первый столбец. Excel сохраните как CSV.</p>
+    </div>
+
+    <h2>Настройки</h2>
+    <div class="grid">
+      <label>Длина, мм
+        <input type="number" id="length" value="30" min="5" max="120" step="1">
+      </label>
+      <label>Плотность
+        <select id="density">
+          <option>1</option><option selected>2</option><option>3</option>
+        </select>
+      </label>
+      <label>Копий каждой
+        <input type="number" id="copies" value="1" min="1" max="99">
+      </label>
+      <label>Кегль, точек
+        <input type="number" id="font" value="0" min="0" max="60">
+        <small>0 — подобрать автоматически</small>
+      </label>
+      <label>Тип этикетки
+        <select id="label">
+          <option value="">авто (по метке)</option>
+          <option value="withgaps">с зазорами</option>
+          <option value="continuous">непрерывная лента</option>
+          <option value="transparent">прозрачные</option>
+          <option value="blackmarkgap">с чёрной меткой</option>
+          <option value="heatshrink">термоусадочная трубка</option>
+        </select>
+      </label>
+      <label class="check">
+        <input type="checkbox" id="flip"> Перевернуть на 180°
+      </label>
+    </div>
+
+    <h2>Шаблоны</h2>
+    <div class="row">
+      <select id="templates"><option value="">— выберите —</option></select>
+      <button id="tpl-save" class="ghost">Сохранить</button>
+      <button id="tpl-del" class="ghost danger">Удалить</button>
+    </div>
+    <p class="hint">Шаблон хранит настройки под типовую задачу: кабельные бирки, шильдики оборудования.</p>
+  </section>
+
+  <!-- ПРАВАЯ КОЛОНКА: что получится -->
+  <section class="panel preview-panel">
+    <h2>Предпросмотр</h2>
+    <div class="preview-box">
+      <img id="preview" alt="макет этикетки">
+      <div id="preview-empty" class="preview-empty">нажмите «Предпросмотр»</div>
+    </div>
+    <p id="preview-info" class="hint"></p>
+
+    <div class="actions">
+      <button id="preview-btn" class="ghost">Предпросмотр</button>
+      <button id="print-btn" class="primary">Печать</button>
+    </div>
+
+    <div id="progress" class="progress hidden">
+      <div class="bar"><div id="bar-fill"></div></div>
+      <p id="progress-text"></p>
+    </div>
+  </section>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>
