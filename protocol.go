@@ -76,16 +76,42 @@ var infoResponse = map[byte]byte{
 	infoSerial:    0x4B,
 }
 
-// Типы этикеток
+// Типы этикеток протокола NIIMBOT.
+//
+// Описание типов: https://printers.niim.blue/other/label-types/
+// Полный набор из восьми типов поддерживают разные модели; у N1 их пять —
+// см. labelTypesN1.
 var labelTypes = map[string]byte{
-	"withgaps":     1,
-	"black":        2,
-	"continuous":   3,
-	"perforated":   4,
-	"transparent":  5,
-	"pvctag":       6,
-	"blackmarkgap": 10,
-	"heatshrink":   11,
+	"withgaps":     1,  // с зазорами — обычные этикетки
+	"black":        2,  // чёрные (термочувствительные)
+	"continuous":   3,  // непрерывная лента без зазоров
+	"perforated":   4,  // перфорированные
+	"transparent":  5,  // прозрачные
+	"pvctag":       6,  // ПВХ-бирки
+	"blackmarkgap": 10, // с чёрной меткой
+	"heatshrink":   11, // термоусадочная трубка
+}
+
+// labelTypesN1 — какие типы этикеток поддерживает именно N1.
+// Источник: таблица моделей NiimBlueLib (paperTypes для id 3586).
+//
+// Остальные три типа (black, perforated, pvctag) протокол знает, но
+// прошивка N1 их не поддерживает — печатать на них не стоит.
+var labelTypesN1 = map[byte]string{
+	1:  "withgaps — этикетки с зазорами (обычные)",
+	3:  "continuous — непрерывная лента",
+	5:  "transparent — прозрачные",
+	10: "blackmarkgap — с чёрной меткой",
+	11: "heatshrink — термоусадочная трубка",
+}
+
+// labelListN1 возвращает список поддерживаемых N1 типов для сообщения об ошибке.
+func labelListN1() string {
+	out := ""
+	for _, name := range []byte{1, 3, 5, 10, 11} {
+		out += "\n  --label " + labelTypesN1[name]
+	}
+	return out
 }
 
 // Параметры N1 (из таблицы моделей NiimBlueLib, id 3586)

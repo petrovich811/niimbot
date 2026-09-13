@@ -60,6 +60,14 @@ func main() {
 		fatal(err)
 	}
 
+	// Тип этикетки проверяем ДО подключения: незачем будить принтер,
+	// если задача заведомо невыполнима.
+	if cmd == "text" || cmd == "image" {
+		if err := checkLabelType(*label); err != nil {
+			fatal(err)
+		}
+	}
+
 	switch cmd {
 	case "scan":
 		mac, err := ScanPrinter("N1-", 12*time.Second, *verbose)
@@ -175,12 +183,24 @@ func splitArgs(args []string) (flags []string, positional []string) {
 	return
 }
 
-func printRows(p *Printer, rows []Row, density int, label string, copies int) error {
-	lt, ok := labelTypes[label]
+// checkLabelType проверяет имя типа этикетки и поддержку его моделью N1.
+func checkLabelType(label string) error {
+	id, ok := labelTypes[label]
 	if !ok {
-		return fmt.Errorf("неизвестный тип этикетки %q", label)
+		return fmt.Errorf("неизвестный тип этикетки %q.\nПоддерживаются:%s", label, labelListN1())
 	}
-	if err := p.PrintRows(rows, byte(density), lt, copies); err != nil {
+	// Протокол знает восемь типов, но N1 заявляет только пять.
+	if _, ok := labelTypesN1[id]; !ok {
+		return fmt.Errorf("N1 не поддерживает тип %q.\nПоддерживаются:%s", label, labelListN1())
+	}
+	return nil
+}
+
+func printRows(p *Printer, rows []Row, density int, label string, copies int) error {
+	if err := checkLabelType(label); err != nil {
+		return err
+	}
+	if err := p.PrintRows(rows, byte(density), labelTypes[label], copies); err != nil {
 		return err
 	}
 	fmt.Println("готово")
@@ -234,9 +254,16 @@ func usage() {
   niimbot testpage              встроенная тестовая страница
 
 Флаги: --address MAC   --length мм   --font точек   --density 1..3
-       --label withgaps|continuous|black|perforated|transparent|pvctag|
-               blackmarkgap|heatshrink
        --copies N   --flip   -v=false
+
+Типы этикеток (N1 поддерживает пять из восьми типов протокола):
+  --label withgaps       этикетки с зазорами — обычные (по умолчанию)
+  --label continuous     непрерывная лента
+  --label transparent    прозрачные
+  --label blackmarkgap   с чёрной меткой
+  --label heatshrink     термоусадочная трубка
+
+Протокол знает ещё black, perforated и pvctag, но прошивка N1 их не поддерживает.
 `)
 }
 

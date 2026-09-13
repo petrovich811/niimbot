@@ -166,3 +166,41 @@ func TestRowTypeForEmptyLine(t *testing.T) {
 	}
 }
 
+
+// N1 поддерживает только пять типов этикеток из восьми, известных протоколу.
+// Остальные должны отсекаться до отправки на принтер.
+func TestLabelTypesSupportedByN1(t *testing.T) {
+	supported := []string{"withgaps", "continuous", "transparent", "blackmarkgap", "heatshrink"}
+	for _, name := range supported {
+		id, ok := labelTypes[name]
+		if !ok {
+			t.Fatalf("тип %q отсутствует в таблице протокола", name)
+		}
+		if _, ok := labelTypesN1[id]; !ok {
+			t.Fatalf("N1 должен поддерживать %q (id %d)", name, id)
+		}
+	}
+	// Эти три протокол знает, но N1 их не поддерживает.
+	for _, name := range []string{"black", "perforated", "pvctag"} {
+		id, ok := labelTypes[name]
+		if !ok {
+			t.Fatalf("тип %q отсутствует в таблице протокола", name)
+		}
+		if _, ok := labelTypesN1[id]; ok {
+			t.Fatalf("N1 не должен заявлять тип %q (id %d)", name, id)
+		}
+	}
+	// Коды типов должны совпадать с описанием протокола.
+	want := map[string]byte{
+		"withgaps": 1, "black": 2, "continuous": 3, "perforated": 4,
+		"transparent": 5, "pvctag": 6, "blackmarkgap": 10, "heatshrink": 11,
+	}
+	for name, id := range want {
+		if labelTypes[name] != id {
+			t.Fatalf("%s: код %d, ожидался %d", name, labelTypes[name], id)
+		}
+	}
+	if n := len(labelTypesN1); n != 5 {
+		t.Fatalf("у N1 должно быть 5 типов, а не %d", n)
+	}
+}

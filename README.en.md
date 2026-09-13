@@ -81,6 +81,38 @@ go build -o niimbot .
 
 ## Labels and orientation
 
+### Label types
+
+The NIIMBOT protocol knows eight label types, but the **N1 supports five**
+([label types reference](https://printers.niim.blue/other/label-types/)):
+
+| ID | Type | N1 |
+|---|---|---|
+| 1 | with gaps — the usual labels (`withgaps`) | ✅ |
+| 2 | black thermal (`black`) | ❌ |
+| 3 | continuous, no gaps (`continuous`) | ✅ |
+| 4 | perforated (`perforated`) | ❌ |
+| 5 | transparent (`transparent`) | ✅ |
+| 6 | PVC tags (`pvctag`) | ❌ |
+| 10 | black mark gap (`blackmarkgap`) | ✅ |
+| 11 | heat-shrink tube (`heatshrink`) | ✅ |
+
+The types `black`, `perforated` and `pvctag` exist in the protocol, but the N1
+firmware does not support them. The driver checks the type **before connecting**
+and refuses to print if the model does not support it.
+
+Labels sold for the N1 are up to **15 mm wide** (12 mm printable strip down the
+centre): white matt 14×30, 14×40 and 14×50 mm, matt silver and clear 14×30 mm,
+and coloured cable labels 12.5×109 mm. Printing is thermal transfer, so a ribbon
+is required.
+
+Every roll carries an **RFID tag** holding the label type and the remaining
+count; the printer reads it on its own (for gap calibration, for example). The
+tag also stores the label dimensions, but the printer never sends them to the
+host — which is why the length is set with the `--length` flag.
+
+### Orientation
+
 The N1 printhead is **96 dots** wide — **12 mm** at 203 dpi. This project uses
 **EW14×30** labels: 14 mm wide, 30 mm long along the feed direction. The
 printable area is a 12 mm strip down the centre of the label.
