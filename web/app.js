@@ -82,6 +82,7 @@ function collectRequest() {
 
   return {
     items,
+    template: mode === 'series' ? $('template').value : '',
     length: parseFloat($('length').value) || 30,
     font: parseFloat($('font').value) || 0,
     density: parseInt($('density').value, 10) || 2,
@@ -97,6 +98,7 @@ function applySettings(s) {
   if (s.density) $('density').value = s.density;
   if (s.label !== undefined) $('label').value = s.label;
   if (s.copies) $('copies').value = s.copies;
+  if (s.template !== undefined) $('template').value = s.template;
   $('flip').checked = !!s.flip;
 }
 
@@ -128,7 +130,8 @@ async function doPreview() {
 
     const px = await imageSize(previewURL);
     $('preview-info').textContent =
-      `${px.w}×${px.h} точек · ${(px.w / 8).toFixed(1)}×${(px.h / 8).toFixed(1)} мм`;
+      `${px.w}×${px.h} точек · ${(px.w / 8).toFixed(1)}×${(px.h / 8).toFixed(1)} мм` +
+      (mode === 'series' ? ' · предпросмотр первой этикетки серии' : '');
   } catch (e) {
     alert(e.message);
   }
@@ -225,6 +228,7 @@ async function saveTemplate() {
     name: name.trim(),
     length: s.length, font: s.font, density: s.density,
     label: s.label, copies: s.copies, flip: s.flip,
+    template: s.template,
   };
   const r = await fetch('/api/templates', {
     method: 'POST',

@@ -41,7 +41,12 @@
         <input type="file" id="csv-file" accept=".csv,.txt" hidden>
         <span id="series-count" class="hint">0 этикеток</span>
       </div>
-      <p class="hint">Из CSV берётся первый столбец. Excel сохраните как CSV.</p>
+      <p class="hint">Столбцы разделяйте <code>;</code> — они подставляются в шаблон. Excel сохраните как CSV.</p>
+
+      <label>Шаблон этикетки <small>необязательно: каждая строка шаблона — строка на этикетке, <code>{1}</code>, <code>{2}</code>… — столбцы данных</small>
+        <textarea id="template" rows="4" placeholder="{1}|{2}"></textarea>
+      </label>
+      <p class="hint">Без шаблона одна строка данных = одна этикетка, а <code>|</code> переносит текст на новую строку.</p>
     </div>
 
     <h2>Настройки</h2>

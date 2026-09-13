@@ -279,3 +279,57 @@ func TestParseRfidInfoNoTag(t *testing.T) {
 		}
 	}
 }
+
+// Шаблон этикетки: столбцы строки данных подставляются в {1}, {2}…
+// и каждая строка шаблона становится строкой этикетки.
+func TestExpandTemplate(t *testing.T) {
+	row := splitFields("Насос центробежный;12А-5;14.09.2026")
+	if len(row) != 3 || row[0] != "Насос центробежный" || row[1] != "12А-5" || row[2] != "14.09.2026" {
+		t.Fatalf("разбор столбцов: %q", row)
+	}
+
+	lines := expandTemplate("{1}\n{2}\n{3}", row)
+	want := []string{"Насос центробежный", "12А-5", "14.09.2026"}
+	if len(lines) != len(want) {
+		t.Fatalf("строк %d, ожидалось %d: %q", len(lines), len(want), lines)
+	}
+	for i := range want {
+		if lines[i] != want[i] {
+			t.Fatalf("строка %d = %q, ожидалась %q", i, lines[i], want[i])
+		}
+	}
+
+	// Столбец можно использовать несколько раз и вместе с обычным текстом.
+	lines = expandTemplate("ТЕГ {2}\n{1}", row)
+	if len(lines) != 2 || lines[0] != "ТЕГ 12А-5" || lines[1] != "Насос центробежный" {
+		t.Fatalf("подстановка с текстом: %q", lines)
+	}
+
+	// Пустые строки шаблона на этикетку не попадают.
+	if got := expandTemplate("{1}\n\n{2}", row); len(got) != 2 {
+		t.Fatalf("пустые строки не отброшены: %q", got)
+	}
+}
+
+// Столбцы разбираются по ; , или табуляции — что встретится первым.
+func TestSplitFieldsSeparators(t *testing.T) {
+	cases := map[string][]string{
+		"a;b;c":     {"a", "b", "c"},
+		"a,b,c":     {"a", "b", "c"},
+		"a\tb\tc":   {"a", "b", "c"},
+		`"a";"b"`:   {"a", "b"},
+		"один":      {"один"},
+		"a; b ; c ": {"a", "b", "c"},
+	}
+	for in, want := range cases {
+		got := splitFields(in)
+		if len(got) != len(want) {
+			t.Fatalf("%q → %q, ожидалось %q", in, got, want)
+		}
+		for i := range want {
+			if got[i] != want[i] {
+				t.Fatalf("%q → %q, ожидалось %q", in, got, want)
+			}
+		}
+	}
+}

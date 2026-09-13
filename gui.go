@@ -93,8 +93,9 @@ type Template struct {
 	Font    float64 `json:"font"`
 	Density int     `json:"density"`
 	Label   string  `json:"label"`
-	Copies  int     `json:"copies"`
-	Flip    bool    `json:"flip"`
+	Copies   int    `json:"copies"`
+	Flip     bool   `json:"flip"`
+	Template string `json:"template"`
 }
 
 func templatesPath() string {
@@ -203,7 +204,8 @@ func apiStatus(address string) (map[string]any, error) {
 
 // printRequest — тело запросов на печать.
 type printRequest struct {
-	Items   []string `json:"items"`   // этикетки: каждая — текст, строки через |
+	Items    []string `json:"items"`    // строки данных: одна запись на этикетку
+	Template string   `json:"template"` // шаблон этикетки с {1}, {2}… (необязательно)
 	Length  float64  `json:"length"`
 	Font    float64  `json:"font"`
 	Density int      `json:"density"`
@@ -211,6 +213,43 @@ type printRequest struct {
 	Copies  int      `json:"copies"`
 	Flip    bool     `json:"flip"`
 	Address string   `json:"address"`
+}
+
+// splitFields разбирает строку данных на столбцы: ; , или табуляция.
+func splitFields(s string) []string {
+	s = strings.TrimRight(s, "\r")
+	sep := ";"
+	switch {
+	case strings.Contains(s, "\t"):
+		sep = "\t"
+	case strings.Contains(s, ";"):
+		sep = ";"
+	case strings.Contains(s, ","):
+		sep = ","
+	}
+	parts := strings.Split(s, sep)
+	for i := range parts {
+		parts[i] = strings.Trim(strings.TrimSpace(parts[i]), `"`)
+	}
+	return parts
+}
+
+// expandTemplate подставляет столбцы строки данных в шаблон этикетки.
+//
+// Каждая строка шаблона становится строкой этикетки: так из одной записи
+// данных получается многострочная этикетка. {1}, {2}… — столбцы.
+func expandTemplate(tpl string, row []string) []string {
+	var out []string
+	for _, line := range strings.Split(tpl, "\n") {
+		for i, v := range row {
+			line = strings.ReplaceAll(line, fmt.Sprintf("{%d}", i+1), v)
+		}
+		line = strings.TrimRight(line, " \t")
+		if strings.TrimSpace(line) != "" {
+			out = append(out, line)
+		}
+	}
+	return out
 }
 
 // splitLabel превращает текст этикетки в строки: «A|B» → две строки.
@@ -235,7 +274,12 @@ func renderPages(req printRequest) ([][]Row, error) {
 	}
 	var pages [][]Row
 	for _, item := range req.Items {
-		lines := splitLabel(item)
+		var lines []string
+		if strings.TrimSpace(req.Template) != "" {
+			lines = expandTemplate(req.Template, splitFields(item))
+		} else {
+			lines = splitLabel(item)
+		}
 		if len(lines) == 0 {
 			continue
 		}
@@ -311,7 +355,13 @@ func apiPreview(w http.ResponseWriter, req printRequest) {
 	}
 	lines := []string{"пусто"}
 	if len(req.Items) > 0 {
-		if l := splitLabel(req.Items[0]); len(l) > 0 {
+		var l []string
+		if strings.TrimSpace(req.Template) != "" {
+			l = expandTemplate(req.Template, splitFields(req.Items[0]))
+		} else {
+			l = splitLabel(req.Items[0])
+		}
+		if len(l) > 0 {
 			lines = l
 		}
 	}

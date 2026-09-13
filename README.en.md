@@ -105,6 +105,40 @@ the same functions the command line does.
 A `|` in a line starts a new line inside one label: `Pump|12A-5` puts two lines
 on the label. Templates live in `~/.config/niimbot/templates.json`.
 
+### A series of multi-line labels: template + data
+
+When every label in a series needs several lines, use a **label template** and a
+**data table** — the way real label software does it.
+
+**Template** (the "Label template" field):
+
+```
+{1}
+{2}
+{3}
+```
+
+**Data** (one record per line, columns separated by `;`):
+
+```
+Centrifugal pump;12A-5;2026-09-14
+Gate valve;12B-1;2026-09-14
+Control valve;12B-2;2026-09-14
+```
+
+That prints **three labels with three lines each**: `{1}`, `{2}`, `{3}` are the
+record's columns.
+
+| Rule | How it works |
+|---|---|
+| Template lines | every template line becomes one line on the label; empty lines are skipped |
+| Columns | separated by `;`, `,` or a tab — whichever comes first |
+| Reusing a column | `TAG {2}` puts a column anywhere in the line |
+| Without a template | one data line is one label, and `\|` inside it breaks the line |
+
+A CSV exported from Excel therefore works as-is: upload it, set the template, and
+the whole table prints as a series.
+
 ## Labels and orientation
 
 ### Label types
