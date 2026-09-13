@@ -87,9 +87,10 @@ func TestCountPixels(t *testing.T) {
 	}
 }
 
-// Ориентация: изображение в ориентации чтения (ширина = подача,
-// высота = головка) должно транспонироваться так, чтобы точка из
-// верхнего левого угла попала в бит 7 первого байта первой строки.
+// Ориентация. Изображение в ориентации чтения (ширина = подача,
+// высота = головка) транспонируется в строки принтера, причём ось головки
+// идёт в обратном порядке — иначе этикетка выходит зеркальной
+// (проверено печатью на живом принтере).
 func TestImageToRowsOrientation(t *testing.T) {
 	img := NewLabelImage(2) // 2 мм ≈ 16 строк подачи
 	if img.Bounds().Dx() == 0 || img.Bounds().Dy() != printheadPixels {
@@ -99,17 +100,43 @@ func TestImageToRowsOrientation(t *testing.T) {
 	if img.GrayAt(0, 0).Y != 255 {
 		t.Fatalf("фон не белый: %d", img.GrayAt(0, 0).Y)
 	}
-	img.SetGray(0, 0, color.Gray{Y: 0}) // точка в начале координат
+	if len(ImageToRows(img, false)) != img.Bounds().Dx() {
+		t.Fatalf("строк %d, ожидалось %d (по длине этикетки)",
+			len(ImageToRows(img, false)), img.Bounds().Dx())
+	}
 
+	// Точка в начале координат изображения (x=0 — начало подачи,
+	// y=0 — один край головки) должна попасть в первую строку и в последнюю
+	// точку головки (c = 95), то есть в младший бит последнего байта.
+	img.SetGray(0, 0, color.Gray{Y: 0})
 	rows := ImageToRows(img, false)
 	if rows[0] == nil {
 		t.Fatal("первая строка пустая, хотя в ней есть точка")
 	}
-	if rows[0][0] != 0x80 {
-		t.Fatalf("первый байт = 0x%02x, ожидался 0x80 (бит 7 = крайняя точка)", rows[0][0])
+	last := printheadPixels/8 - 1
+	if rows[0][last] != 0x01 {
+		t.Fatalf("последний байт первой строки = 0x%02x, ожидался 0x01 "+
+			"(точка головки 95 = младший бит)", rows[0][last])
 	}
-	if len(rows) != img.Bounds().Dx() {
-		t.Fatalf("строк %d, ожидалось %d (по длине этикетки)", len(rows), img.Bounds().Dx())
+	for i, b := range rows[0] {
+		if i != last && b != 0 {
+			t.Fatalf("байт %d = 0x%02x, ожидался 0 — точка должна быть одна", i, b)
+		}
+	}
+
+	// Обратная проверка: точка у противоположного края головки (y = 95)
+	// должна оказаться в первом байте, в старшем бите.
+	img2 := NewLabelImage(2)
+	img2.SetGray(0, printheadPixels-1, color.Gray{Y: 0})
+	rows2 := ImageToRows(img2, false)
+	if rows2[0] == nil || rows2[0][0] != 0x80 {
+		t.Fatalf("край головки: первый байт = 0x%02x, ожидался 0x80",
+			func() byte {
+				if rows2[0] == nil {
+					return 0
+				}
+				return rows2[0][0]
+			}())
 	}
 }
 

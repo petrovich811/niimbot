@@ -86,11 +86,20 @@ The N1 printhead is **96 dots** wide — **12 mm** at 203 dpi. The author uses
 (12 mm printable area, centred).
 
 **Text runs along the label.** Content is rendered in "reading orientation"
-(width = label length, height = printhead width) and then transposed into
-printer rows. Drawing it "as on screen" makes the text run *across* the label —
-that was the author's first mistake, confirmed by an actual print.
+(width = label length, height = printhead width) and converted into printer rows
+like this:
 
-If the label comes out upside down, add `--flip`.
+- **transposed** — the image's X axis becomes the feed direction;
+- **the printhead axis is reversed** — head dot `c` reads image row `across-1-c`
+  (in NiimBlueLib that is `idx = (height-1-col)*width + row`).
+
+Both details were confirmed by printing on real hardware, and both were the
+author's mistakes:
+
+1. drawing the content "as on screen" makes the text run **across** the label;
+2. without reversing the printhead axis the label comes out **mirrored**.
+
+If the label comes out upside down, add `--flip` (180° rotation).
 
 ## Protocol
 
@@ -164,15 +173,18 @@ and the white canvas background.
 
 **Verified on a real N1 (GA24110447):**
 
-- discovery, connection and handshake — by this program;
-- model id `3586`, serial number, firmware `3.13`;
-- label printing — by the first, Python version of the driver (3 labels,
-  status `page 1, print 100%, feed 100%`);
-- that print revealed the text was running across the label instead of along it.
+- discovery, connection and handshake;
+- model id `3586`, serial number, firmware `3.13`, battery;
+- **label printing** — full cycle: `page 1, print 100%, feed 100%`;
+- **orientation** — the printout reads correctly (text along the label, not
+  mirrored), confirmed on paper after the two fixes described above;
+- both orientation bugs were only findable by looking at a physical printout.
 
-**Not yet confirmed physically:** printing with the current Go version and the
-corrected orientation. It uses the same print path as the verified version and
-is covered by tests, but the output should be checked on paper.
+**Not verified yet:**
+
+- printing on label types other than `withgaps`;
+- other NIIMBOT models (they need their own printhead parameters);
+- image printing (`image`) — same code path as text, but not tried on paper.
 
 ## Acknowledgements
 

@@ -161,10 +161,15 @@ func ImageToRows(img *image.Gray, flip bool) []Row {
 		row := make([]byte, bytesPerRow)
 		blank := true
 		for c := 0; c < across; c++ {
-			x, y := r, c
+			// Ось головки идёт В ОБРАТНОМ порядке: точка головки c берётся
+			// из строки изображения across-1-c. Так устроен протокол
+			// (в NiimBlueLib это `idx = (height-1-col)*width + row`).
+			// Без этого разворота этикетка выходит зеркальной — проверено
+			// печатью на живом принтере.
+			x, y := r, across-1-c
 			if flip {
 				x = feedLen - 1 - r
-				y = across - 1 - c
+				y = c
 			}
 			if img.GrayAt(b.Min.X+x, b.Min.Y+y).Y < 128 {
 				row[c/8] |= 1 << (7 - uint(c%8))
