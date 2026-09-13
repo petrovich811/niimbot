@@ -3,7 +3,7 @@
 [![Go](https://img.shields.io/badge/Go-1.24+-00ADD8?logo=go)](https://go.dev)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-**English version:** [README.en.md](README.en.md)
+**Другие языки:** [English](README.en.md) · [Nederlands](README.nl.md) · [简体中文](README.zh-CN.md)
 
 Драйвер термотранспортного принтера этикеток **NIIMBOT N1** по Bluetooth LE.
 Написан на Go, работает из командной строки: печатает текст и картинки,
