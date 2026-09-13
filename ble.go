@@ -438,3 +438,21 @@ func (p *Printer) waitFinished(pages int) error {
 	}
 	return fmt.Errorf("не дождался подтверждения печати (этикетка может быть напечатана)")
 }
+
+// ReadRfid читает метку рулона: ribbon=false — этикетки, ribbon=true — лента.
+func (p *Printer) ReadRfid(ribbon bool) (RfidInfo, error) {
+	cmd, resp := byte(cmdRfidInfo), byte(respRfidInfo)
+	what := "этикеток"
+	if ribbon {
+		cmd, resp = cmdRfidInfo2, respRfidInfo2
+		what = "ленты"
+	}
+	pkt, err := p.Send(cmd, nil, []byte{resp}, 4*time.Second)
+	if err != nil {
+		return RfidInfo{}, err
+	}
+	if pkt == nil {
+		return RfidInfo{}, fmt.Errorf("принтер не ответил на запрос метки %s", what)
+	}
+	return parseRfidInfo(pkt.Data), nil
+}

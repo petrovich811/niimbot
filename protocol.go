@@ -37,6 +37,8 @@ const (
 	cmdHeartbeat          = 0xDC
 	cmdPrintTestPage      = 0x5A
 	cmdCancelPrint        = 0xDA
+	cmdRfidInfo           = 0x1A // метка рулона этикеток
+	cmdRfidInfo2          = 0x1C // метка ленты (риббона)
 )
 
 // Ответы: принтер → клиент (проверено на живом N1)
@@ -49,6 +51,8 @@ const (
 	respPrintStatus    = 0xB3
 	respSetDensity     = 0x31
 	respPrintError     = 0xDB
+	respRfidInfo       = 0x1B // ответ на cmdRfidInfo
+	respRfidInfo2      = 0x1D // ответ на cmdRfidInfo2
 )
 
 // Статус принтера у N1 приходит кодом 0xB4 (в библиотеке указан 0xB5) —
@@ -191,4 +195,109 @@ func parsePackets(buf *[]byte) []Packet {
 	}
 	*buf = b
 	return out
+}
+
+// --------------------------------------------------------------------------
+// RFID-метки рулона
+// --------------------------------------------------------------------------
+
+// RfidInfo — данные метки рулона (этикеток или ленты).
+//
+// Формат ответа (по NiimBlueLib, parseRfidInfoResponse):
+//
+//	uuid(8) | штрихкод(vstring) | серийник(vstring) |
+//	всего(int16) | израсходовано(int16) | тип этикетки(int8) [| ёмкость(int16)]
+//
+// Если в ответе один байт — метки нет.
+type RfidInfo struct {
+	TagPresent  bool
+	UUID        string
+	Barcode     string
+	Serial      string
+	AllPaper    int
+	UsedPaper   int
+	LabelType   byte
+	LabelTypeOK bool
+	Capacity    int
+	HasCapacity bool
+}
+
+// Leftover — сколько этикеток осталось в рулоне.
+func (r RfidInfo) Leftover() int {
+	if r.AllPaper < 0 || r.UsedPaper < 0 {
+		return -1
+	}
+	return r.AllPaper - r.UsedPaper
+}
+
+// LabelTypeName — имя типа этикетки из метки.
+func (r RfidInfo) LabelTypeName() string {
+	for name, id := range labelTypes {
+		if id == r.LabelType {
+			return name
+		}
+	}
+	return ""
+}
+
+// parseRfidInfo разбирает данные метки.
+func parseRfidInfo(data []byte) RfidInfo {
+	var info RfidInfo
+	if len(data) <= 1 {
+		return info // метки нет
+	}
+	info.TagPresent = true
+
+	off := 0
+	if len(data) < 8 {
+		return info
+	}
+	info.UUID = fmt.Sprintf("%x", data[off:off+8])
+	off += 8
+
+	readVString := func() string {
+		if off >= len(data) {
+			return ""
+		}
+		n := int(data[off])
+		off++
+		if off+n > len(data) {
+			n = len(data) - off
+		}
+		s := string(data[off : off+n])
+		off += n
+		return s
+	}
+	info.Barcode = readVString()
+	info.Serial = readVString()
+
+	readI16 := func() (int, bool) {
+		if off+2 > len(data) {
+			return 0, false
+		}
+		v := int(data[off])<<8 | int(data[off+1])
+		off += 2
+		return v, true
+	}
+	if v, ok := readI16(); ok {
+		info.AllPaper = v
+	} else {
+		info.AllPaper = -1
+	}
+	if v, ok := readI16(); ok {
+		info.UsedPaper = v
+	} else {
+		info.UsedPaper = -1
+	}
+
+	if off < len(data) {
+		info.LabelType = data[off]
+		info.LabelTypeOK = true
+		off++
+	}
+	if off+2 <= len(data) {
+		info.Capacity = int(data[off])<<8 | int(data[off+1])
+		info.HasCapacity = true
+	}
+	return info
 }

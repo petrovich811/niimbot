@@ -204,3 +204,78 @@ func TestLabelTypesSupportedByN1(t *testing.T) {
 		t.Fatalf("у N1 должно быть 5 типов, а не %d", n)
 	}
 }
+
+// Разбор RFID-метки на реальных байтах, снятых с живого N1.
+func TestParseRfidInfoRealData(t *testing.T) {
+	// Рулон этикеток: ответ 0x1b
+	paper := []byte{
+		0x88, 0x1d, 0xcc, 0xe9, 0x46, 0x12, 0x10, 0x80, // uuid
+		0x08, '1', '2', '2', '4', '2', '1', '1', '7', // штрихкод
+		0x10, 'P', 'C', '0', 'H', '9', '0', '2', '3', '8', '4', '0', '0', '2', '3', '7', '8', // серийник
+		0x00, 0xe4, // всего 228
+		0x00, 0x2b, // израсходовано 43
+		0x01, // тип: withgaps
+	}
+	info := parseRfidInfo(paper)
+	if !info.TagPresent {
+		t.Fatal("метка рулона не распознана")
+	}
+	if info.UUID != "881dcce946121080" {
+		t.Fatalf("uuid = %q", info.UUID)
+	}
+	if info.Barcode != "12242117" {
+		t.Fatalf("штрихкод = %q", info.Barcode)
+	}
+	if info.Serial != "PC0H902384002378" {
+		t.Fatalf("серийный номер = %q", info.Serial)
+	}
+	if info.AllPaper != 228 || info.UsedPaper != 43 || info.Leftover() != 185 {
+		t.Fatalf("ресурс: всего %d, израсходовано %d, осталось %d",
+			info.AllPaper, info.UsedPaper, info.Leftover())
+	}
+	if info.LabelType != 1 || info.LabelTypeName() != "withgaps" {
+		t.Fatalf("тип этикетки = %d (%q)", info.LabelType, info.LabelTypeName())
+	}
+	// Тип из метки обязан быть из числа поддерживаемых N1.
+	if _, ok := labelTypesN1[info.LabelType]; !ok {
+		t.Fatal("тип из метки не поддерживается N1")
+	}
+}
+
+// Лента: ответ 0x1d. Поле типа здесь — тип расходника, а не этикетки,
+// поэтому в набор типов N1 оно попадать не обязано.
+func TestParseRfidInfoRibbon(t *testing.T) {
+	ribbon := []byte{
+		0x88, 0x1d, 0x82, 0x09, 0xfa, 0x90, 0x00, 0x00,
+		0x0d, '6', '9', '7', '2', '8', '4', '2', '7', '4', '7', '5', '2', '5',
+		0x10, 'P', 'Z', '1', 'G', 'A', '0', '6', '3', '0', '4', '0', '0', '0', '3', '9', '1',
+		0x06, 0x40,
+		0x03, 0x85,
+		0x06,
+		0x40, // неполная ёмкость — читаться не должна
+	}
+	info := parseRfidInfo(ribbon)
+	if !info.TagPresent {
+		t.Fatal("метка ленты не распознана")
+	}
+	if info.Serial != "PZ1GA06304000391" {
+		t.Fatalf("серийный номер ленты = %q", info.Serial)
+	}
+	if info.AllPaper != 1600 || info.UsedPaper != 901 || info.Leftover() != 699 {
+		t.Fatalf("ресурс ленты: всего %d, израсходовано %d, осталось %d",
+			info.AllPaper, info.UsedPaper, info.Leftover())
+	}
+	if info.HasCapacity {
+		t.Fatal("ёмкость не должна читаться: в ответе для неё только один байт")
+	}
+}
+
+// Пустой ответ означает, что метки нет.
+func TestParseRfidInfoNoTag(t *testing.T) {
+	for _, data := range [][]byte{{}, {0x01}} {
+		info := parseRfidInfo(data)
+		if info.TagPresent {
+			t.Fatalf("данные %x: метка не должна считаться присутствующей", data)
+		}
+	}
+}

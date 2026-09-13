@@ -19,7 +19,8 @@ $ niimbot text "Pump" "12A-5"
 
 | Command | Description |
 |---|---|
-| `niimbot info` | printer status: model id, serial number, firmware, density, battery |
+| `niimbot info` | printer status **and installed consumables**: model id, serial number, firmware, battery, label type, labels left in the roll, ribbon left |
+| `niimbot rfid` | read the RFID tags of the label roll and the ribbon |
 | `niimbot text "line" "..."` | print text (each argument is a separate line) |
 | `niimbot image file.png` | print an image |
 | `niimbot preview "line"` | render the label **without printing** |
@@ -74,7 +75,7 @@ go build -o niimbot .
 | `--length mm` | label length along the feed direction | `30` |
 | `--font px` | font size; `0` fits the label automatically | `0` |
 | `--density 1..3` | print density | `2` |
-| `--label` | label type: `withgaps`, `continuous`, `black`, `perforated`, `transparent`, `pvctag`, `blackmarkgap`, `heatshrink` | `withgaps` |
+| `--label` | label type; **empty means auto-detect from the roll's RFID tag** | auto |
 | `--copies N` | number of copies | `1` |
 | `--flip` | rotate content by 180° | off |
 | `-v=false` | quiet protocol log | on |
@@ -106,10 +107,40 @@ centre): white matt 14×30, 14×40 and 14×50 mm, matt silver and clear 14×30 m
 and coloured cable labels 12.5×109 mm. Printing is thermal transfer, so a ribbon
 is required.
 
-Every roll carries an **RFID tag** holding the label type and the remaining
-count; the printer reads it on its own (for gap calibration, for example). The
-tag also stores the label dimensions, but the printer never sends them to the
-host — which is why the length is set with the `--length` flag.
+### Consumable auto-detection
+
+Every roll — labels and ribbon alike — carries an **RFID tag**. The printer reads
+it on its own, and the driver can ask:
+
+```console
+$ niimbot rfid
+
+=== label roll ===
+  UUID:                  881dcce946121080
+  barcode:               12242117
+  serial:                PC0H902384002378
+  label type:            withgaps (1) — supported by N1
+  resource:              228, used 43, left 185
+
+=== ribbon ===
+  UUID:                  881d8209fa900000
+  serial:                PZ1GA06304000391
+  resource:              1600, used 901, left 699
+```
+
+**The label type is detected automatically.** When `--label` is omitted, the
+driver reads the roll's tag and takes the type from there: the printer knows
+what is loaded far better than any guess. If the tag reports a type the model
+does not support, printing does not start. If `--label` is given explicitly and
+disagrees with the tag, the driver warns:
+
+```
+warning: the printer holds withgaps labels, but printing as continuous
+```
+
+The tag also stores the label dimensions, but the printer **never sends them to
+the host** (the vendor app fetches them from a server by roll number), so the
+length is still set with the `--length` flag.
 
 ### Orientation
 

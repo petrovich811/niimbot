@@ -54,7 +54,7 @@ func main() {
 	fontPt := fs.Float64("font", 0, "кегль в точках (0 = подобрать автоматически)")
 	flip := fs.Bool("flip", false, "перевернуть содержимое на 180°")
 	density := fs.Int("density", 2, "плотность 1..3")
-	label := fs.String("label", "withgaps", "тип этикетки")
+	label := fs.String("label", "", "тип этикетки; пусто — определить по метке рулона")
 	copies := fs.Int("copies", 1, "количество копий")
 	if err := fs.Parse(flagArgs); err != nil {
 		fatal(err)
@@ -62,7 +62,7 @@ func main() {
 
 	// Тип этикетки проверяем ДО подключения: незачем будить принтер,
 	// если задача заведомо невыполнима.
-	if cmd == "text" || cmd == "image" {
+	if (cmd == "text" || cmd == "image") && *label != "" {
 		if err := checkLabelType(*label); err != nil {
 			fatal(err)
 		}
@@ -95,7 +95,7 @@ func main() {
 		}
 		fmt.Printf("строк с печатью: %d из %d\n", ink, len(rows))
 		return
-	case "info", "testpage", "text", "image":
+	case "info", "rfid", "testpage", "text", "image":
 	default:
 		usage()
 		os.Exit(2)
@@ -126,6 +126,12 @@ func main() {
 	switch cmd {
 	case "info":
 		printInfo(info)
+		printRfid(p, false)
+		printRfid(p, true)
+
+	case "rfid":
+		printRfid(p, false)
+		printRfid(p, true)
 
 	case "testpage":
 		if err := p.PrintTestPage(); err != nil {
@@ -137,12 +143,16 @@ func main() {
 		if len(posArgs) == 0 {
 			fatal(fmt.Errorf("не задан текст"))
 		}
+		labelName, err := resolveLabel(p, *label)
+		if err != nil {
+			fatal(err)
+		}
 		img, err := RenderText(posArgs, *length, *fontPt)
 		if err != nil {
 			fatal(err)
 		}
 		savePreview(img)
-		if err := printRows(p, ImageToRows(img, *flip), *density, *label, *copies); err != nil {
+		if err := printRows(p, ImageToRows(img, *flip), *density, labelName, *copies); err != nil {
 			fatal(err)
 		}
 
@@ -150,11 +160,15 @@ func main() {
 		if len(posArgs) < 1 {
 			fatal(fmt.Errorf("не задан файл картинки"))
 		}
+		labelName, err := resolveLabel(p, *label)
+		if err != nil {
+			fatal(err)
+		}
 		img, err := LoadImageFile(posArgs[0])
 		if err != nil {
 			fatal(err)
 		}
-		if err := printRows(p, ImageToRows(img, *flip), *density, *label, *copies); err != nil {
+		if err := printRows(p, ImageToRows(img, *flip), *density, labelName, *copies); err != nil {
 			fatal(err)
 		}
 	}
@@ -183,6 +197,61 @@ func splitArgs(args []string) (flags []string, positional []string) {
 	return
 }
 
+// resolveLabel определяет тип этикетки для печати.
+//
+// Если флаг --label задан явно — берём его (и предупреждаем, если метка
+// рулона говорит другое). Если не задан — читаем метку рулона: принтер
+// сам знает, что в него вставлено, и это надёжнее любой догадки.
+func resolveLabel(p *Printer, flagValue string) (string, error) {
+	if flagValue != "" {
+		if err := checkLabelType(flagValue); err != nil {
+			return "", err
+		}
+		if detected, ok := detectLabel(p); ok {
+			if labelTypes[flagValue] != detected {
+				fmt.Fprintf(os.Stderr,
+					"внимание: в принтере этикетки типа %s, а печатаем как %s\n",
+					labelTypeName(detected), flagValue)
+			}
+		}
+		return flagValue, nil
+	}
+
+	if detected, ok := detectLabel(p); ok {
+		name := labelTypeName(detected)
+		if name == "" {
+			return "", fmt.Errorf("в метке рулона неизвестный тип этикетки (%d) — задайте --label вручную", detected)
+		}
+		if _, supported := labelTypesN1[detected]; !supported {
+			return "", fmt.Errorf("в метке рулона тип %s, который N1 не поддерживает — задайте --label вручную", name)
+		}
+		fmt.Printf("тип этикетки определён по метке рулона: %s\n", name)
+		return name, nil
+	}
+
+	fmt.Fprintln(os.Stderr, "метка рулона не прочитана — печатаю как withgaps (обычные этикетки)")
+	return "withgaps", nil
+}
+
+// detectLabel читает тип этикетки из метки рулона.
+func detectLabel(p *Printer) (byte, bool) {
+	info, err := p.ReadRfid(false)
+	if err != nil || !info.TagPresent || !info.LabelTypeOK {
+		return 0, false
+	}
+	return info.LabelType, true
+}
+
+// labelTypeName возвращает имя типа по коду.
+func labelTypeName(id byte) string {
+	for name, v := range labelTypes {
+		if v == id {
+			return name
+		}
+	}
+	return ""
+}
+
 // checkLabelType проверяет имя типа этикетки и поддержку его моделью N1.
 func checkLabelType(label string) error {
 	id, ok := labelTypes[label]
@@ -205,6 +274,58 @@ func printRows(p *Printer, rows []Row, density int, label string, copies int) er
 	}
 	fmt.Println("готово")
 	return nil
+}
+
+// printRfid показывает данные метки рулона.
+//
+// ribbon=false — рулон этикеток, ribbon=true — лента (риббон).
+// Поле типа у ленты — не тип этикетки, а тип расходника, поэтому его
+// показываем отдельно и не сверяем со списком типов для N1.
+func printRfid(p *Printer, ribbon bool) {
+	title := "рулон этикеток"
+	if ribbon {
+		title = "лента (риббон)"
+	}
+	fmt.Printf("\n=== %s ===\n", title)
+
+	info, err := p.ReadRfid(ribbon)
+	if err != nil {
+		fmt.Printf("  метка не прочитана: %v\n", err)
+		return
+	}
+	if !info.TagPresent {
+		fmt.Println("  метки нет — рулон без RFID либо не вставлен")
+		return
+	}
+
+	fmt.Printf("  %-22s %s\n", "UUID:", info.UUID)
+	if info.Barcode != "" {
+		fmt.Printf("  %-22s %s\n", "штрихкод:", info.Barcode)
+	}
+	if info.Serial != "" {
+		fmt.Printf("  %-22s %s\n", "серийный номер:", info.Serial)
+	}
+
+	if info.LabelTypeOK {
+		name := info.LabelTypeName()
+		if !ribbon && name != "" {
+			note := "N1 не поддерживает"
+			if _, ok := labelTypesN1[info.LabelType]; ok {
+				note = "N1 поддерживает"
+			}
+			fmt.Printf("  %-22s %s (%d) — %s\n", "тип этикетки:", name, info.LabelType, note)
+		} else {
+			fmt.Printf("  %-22s %d\n", "тип расходника:", info.LabelType)
+		}
+	}
+
+	if info.AllPaper >= 0 && info.UsedPaper >= 0 {
+		fmt.Printf("  %-22s %d, израсходовано %d, осталось %d\n",
+			"ресурс:", info.AllPaper, info.UsedPaper, info.Leftover())
+	}
+	if info.HasCapacity {
+		fmt.Printf("  %-22s %d\n", "ёмкость:", info.Capacity)
+	}
 }
 
 func printInfo(i Info) {
@@ -249,6 +370,7 @@ func usage() {
   niimbot scan                  найти принтер по Bluetooth
   niimbot preview "строка"      отрисовать макет без печати
   niimbot info                  показать состояние принтера
+  niimbot rfid                  прочитать метки рулона и ленты
   niimbot text "строка" "..."   напечатать текст
   niimbot image file.png        напечатать картинку
   niimbot testpage              встроенная тестовая страница
