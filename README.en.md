@@ -81,13 +81,13 @@ go build -o niimbot .
 
 ## Labels and orientation
 
-The N1 printhead is **96 dots** wide — **12 mm** at 203 dpi. The author uses
-**EW14×30** labels: 14 mm wide, 30 mm along the feed direction
-(12 mm printable area, centred).
+The N1 printhead is **96 dots** wide — **12 mm** at 203 dpi. This project uses
+**EW14×30** labels: 14 mm wide, 30 mm long along the feed direction. The
+printable area is a 12 mm strip down the centre of the label.
 
-**Text runs along the label.** Content is rendered in "reading orientation"
-(width = label length, height = printhead width) and converted into printer rows
-like this:
+**Text runs along the label.** To get that, the content is drawn in "reading
+orientation": the image width is the label length, the height is the printhead
+width. That image is then turned into printer rows:
 
 - **transposed** — the image's X axis becomes the feed direction;
 - **the printhead axis is reversed** — head dot `c` reads image row `across-1-c`
@@ -99,7 +99,7 @@ author's mistakes:
 1. drawing the content "as on screen" makes the text run **across** the label;
 2. without reversing the printhead axis the label comes out **mirrored**.
 
-If the label comes out upside down, add `--flip` (180° rotation).
+If the label prints upside down, add `--flip` — that rotates the content 180°.
 
 ## Protocol
 
@@ -176,15 +176,16 @@ and the white canvas background.
 - discovery, connection and handshake;
 - model id `3586`, serial number, firmware `3.13`, battery;
 - **label printing** — full cycle: `page 1, print 100%, feed 100%`;
-- **orientation** — the printout reads correctly (text along the label, not
-  mirrored), confirmed on paper after the two fixes described above;
-- both orientation bugs were only findable by looking at a physical printout.
+- **orientation** — the printout reads correctly: text along the label, not
+  mirrored. Confirmed on paper after the two fixes described above;
+- both orientation bugs showed up only on paper — there is no other way to
+  catch them.
 
 **Not verified yet:**
 
 - printing on label types other than `withgaps`;
 - other NIIMBOT models (they need their own printhead parameters);
-- image printing (`image`) — same code path as text, but not tried on paper.
+- image printing (`image`) — same code path as text, but not yet tried on paper.
 
 ## Acknowledgements
 
