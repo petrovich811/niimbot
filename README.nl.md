@@ -140,6 +140,18 @@ kolommen van het record.
 Een CSV uit Excel werkt dus direct: bestand laden, sjabloon instellen, en de hele
 tabel gaat als reeks naar de printer.
 
+### Een reeks uit Excel printen
+
+1. Maak een tabel in Excel: **één rij is één etiket**, de kolommen zijn wat erop komt.
+2. Sla hem op als **CSV**: Bestand → Opslaan als → CSV.
+3. Open in de interface het tabblad «Reeks» en druk op **CSV laden** — de rijen komen in de lijst.
+4. Stel een **etikeksjabloon** in met `{1}`, `{2}`… — dat bepaalt hoe het etiket eruitziet.
+5. Bekijk het **proefontwerp** en druk op **Printen**.
+
+Het vakje «eerste rij is een kopregel» laat de kop van de tabel weg. Aanhalingstekens
+beschermen een scheidingsteken binnen een veld: `"Pomp; reserve";12A-5` zijn twee
+kolommen, geen drie.
+
 ## Etiketten en oriëntatie
 
 ### Labeltypen
@@ -330,6 +342,19 @@ pakketten, de punttellers, de oriëntatie van regels en de witte achtergrond.
 
 - printen op andere labeltypen dan `withgaps`;
 - andere NIIMBOT-modellen (die hebben eigen printkopgegevens nodig).
+
+## Verwante projecten
+
+Staat er geen Linux-machine naast de printer, dan zijn er andere wegen:
+
+| Project | Wat het biedt |
+|---|---|
+| [NiimBlueLib](https://github.com/MultiMote/niimbluelib) | de open NIIMBOT-protocollibrary (JS, MIT) — de kennis erachter zat ook in deze driver |
+| [NiimBlue](https://niim.blue/) | een kant-en-klare webclient: printen uit de browser via Web Bluetooth, **zonder server**. Werkt in Chrome op Android; op de iPhone is de browser [Bluefy](https://apps.apple.com/us/app/bluefy-web-ble-browser/id1492822055) nodig |
+| [NiimPrintX](https://github.com/labbots/NiimPrintX) | een Python-client met GUI; modellen D11, B21, B1, D110, B18 — de N1 staat er niet bij |
+
+Deze driver onderscheidt zich doordat hij vanaf de Linux-opdrachtregel werkt en
+**reeksen etiketten uit een CSV met een sjabloon** print.
 
 ## Dank
 

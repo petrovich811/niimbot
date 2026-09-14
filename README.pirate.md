@@ -143,6 +143,17 @@ columns o' the record.
 A CSV from Excel sails straight in: load the file, set the template, an' the whole
 table goes to the printer as a fleet.
 
+### Printin' a Fleet from Excel
+
+1. Lay out a table in Excel: **one row be one label**, the columns be what lands on it.
+2. Save her as **CSV**: File → Save As → CSV.
+3. In the window open the «Fleet» tab an' press **Load a CSV** — the rows come aboard.
+4. Set a **label template** with `{1}`, `{2}`… — that be what the label looks like.
+5. Eye the **mock-up** an' press **Print**.
+
+The «first row be a header» box makes the table's header walk the plank. Quotes
+shield a separator inside a field: `"Pump; spare";12A-5` be two columns, not three.
+
 ## Labels an' Which Way Up She Prints
 
 ### Kinds o' Labels
@@ -328,6 +339,19 @@ way rows lie an' the white canvas behind 'em.
 
 - printin' on label kinds other than `withgaps`;
 - other NIIMBOT models (they want their own printhead numbers).
+
+## Ships Sailin' the Same Waters
+
+If there be no Linux box beside the printer, other roads exist:
+
+| Ship | What she gives |
+|---|---|
+| [NiimBlueLib](https://github.com/MultiMote/niimbluelib) | the open NIIMBOT protocol library (JS, MIT) — the knowledge behind this here driver came from her |
+| [NiimBlue](https://niim.blue/) | a ready web client: print from the browser over Web Bluetooth, **no server at all**. Sails in Chrome on Android; on an iPhone ye need the [Bluefy](https://apps.apple.com/us/app/bluefy-web-ble-browser/id1492822055) browser |
+| [NiimPrintX](https://github.com/labbots/NiimPrintX) | a Python client with a window; models D11, B21, B1, D110, B18 — the N1 be not on her list |
+
+This driver stands apart by workin' from the Linux command line an' by printin'
+**fleets o' labels out of a CSV with a template**.
 
 ## Thanks
 

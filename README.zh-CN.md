@@ -136,6 +136,17 @@ go build -o niimbot .
 因此从 Excel 导出的 CSV 可以直接使用：导入文件、设定模板，整张表就作为批量
 发往打印机。
 
+### 从 Excel 批量打印
+
+1. 在 Excel 里做一张表：**一行就是一张标签**，各列就是标签上要出现的内容。
+2. 另存为 **CSV**：文件 → 另存为 → CSV。
+3. 在界面的「批量」标签页按 **导入 CSV** —— 各行进入列表。
+4. 设置**标签模板**，用 `{1}`、`{2}`… 表示各列 —— 它决定标签的样子。
+5. 看一下**预览**，然后按**打印**。
+
+勾选「第一行是标题」会去掉表头。引号可以保护字段内部的逗号或分号：
+`"Pump; spare";12A-5` 是两列，不是三列。
+
 ## 标签与方向
 
 ### 标签类型
@@ -308,6 +319,18 @@ go test ./...
 
 - 在 `withgaps` 以外的标签类型上打印；
 - 其他 NIIMBOT 型号（需要各自的打印头参数）。
+
+## 相关项目
+
+如果打印机旁边没有 Linux 机器，还有别的路子：
+
+| 项目 | 提供什么 |
+|---|---|
+| [NiimBlueLib](https://github.com/MultiMote/niimbluelib) | 开源的 NIIMBOT 协议库（JS，MIT）—— 本驱动的协议知识也来自它 |
+| [NiimBlue](https://niim.blue/) | 现成的网页客户端：在浏览器里通过 Web Bluetooth 直接打印，**不需要服务器**。Android 上用 Chrome；iPhone 上需要 [Bluefy](https://apps.apple.com/us/app/bluefy-web-ble-browser/id1492822055) 浏览器 |
+| [NiimPrintX](https://github.com/labbots/NiimPrintX) | 带图形界面的 Python 客户端；支持 D11、B21、B1、D110、B18 —— 列表里没有 N1 |
+
+本驱动不同之处在于：在 Linux 命令行下工作，并能用**模板从 CSV 批量打印标签**。
 
 ## 致谢
 

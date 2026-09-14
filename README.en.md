@@ -139,6 +139,17 @@ record's columns.
 A CSV exported from Excel therefore works as-is: upload it, set the template, and
 the whole table prints as a series.
 
+### Printing a series from Excel
+
+1. Build a table in Excel: **one row is one label**, the columns are what lands on it.
+2. Save it as **CSV**: File → Save As → CSV.
+3. In the UI open the "Series" tab and press **Load CSV** — the rows land in the list.
+4. Set a **label template** with `{1}`, `{2}`… — that is what the label looks like.
+5. Check the **mock-up** and press **Print**.
+
+The "first row is a header" checkbox drops the table's header. Quotes protect a
+separator inside a field: `"Pump; spare";12A-5` is two columns, not three.
+
 ## Labels and orientation
 
 ### Label types
@@ -326,6 +337,19 @@ and the white canvas background.
 
 - printing on label types other than `withgaps`;
 - other NIIMBOT models (they need their own printhead parameters).
+
+## Related projects
+
+If there is no Linux box next to the printer, there are other roads:
+
+| Project | What it gives |
+|---|---|
+| [NiimBlueLib](https://github.com/MultiMote/niimbluelib) | the open NIIMBOT protocol library (JS, MIT) — this driver is built on the knowledge from it |
+| [NiimBlue](https://niim.blue/) | a ready web client: print from the browser over Web Bluetooth, **no server**. Works in Chrome on Android; on iPhone you need the [Bluefy](https://apps.apple.com/us/app/bluefy-web-ble-browser/id1492822055) browser |
+| [NiimPrintX](https://github.com/labbots/NiimPrintX) | a Python client with a GUI; models D11, B21, B1, D110, B18 — the N1 is not on its list |
+
+This driver stands apart by working from the Linux command line and by printing
+**series of labels from a CSV with a template**.
 
 ## Acknowledgements
 

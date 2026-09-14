@@ -333,3 +333,25 @@ func TestSplitFieldsSeparators(t *testing.T) {
 		}
 	}
 }
+
+// Кавычки защищают разделитель внутри поля — это нужно для CSV из Excel.
+func TestSplitFieldsQuotes(t *testing.T) {
+	cases := map[string][]string{
+		`"Насос; старый";12А-5`:       {"Насос; старый", "12А-5"},
+		`"Он сказал ""да""";12Б-1`:    {`Он сказал "да"`, "12Б-1"},
+		`"a,b";c`:                     {"a,b", "c"},
+		`простой;случай`:              {"простой", "случай"},
+		`"весь в кавычках"`:           {"весь в кавычках"},
+	}
+	for in, want := range cases {
+		got := splitFields(in)
+		if len(got) != len(want) {
+			t.Fatalf("%s → %q, ожидалось %q", in, got, want)
+		}
+		for i := range want {
+			if got[i] != want[i] {
+				t.Fatalf("%s → %q, ожидалось %q", in, got, want)
+			}
+		}
+	}
+}

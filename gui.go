@@ -227,11 +227,39 @@ func splitFields(s string) []string {
 	case strings.Contains(s, ","):
 		sep = ","
 	}
-	parts := strings.Split(s, sep)
-	for i := range parts {
-		parts[i] = strings.Trim(strings.TrimSpace(parts[i]), `"`)
+	return splitQuoted(s, sep)
+}
+
+// splitQuoted делит строку по разделителю, не трогая разделители внутри
+// кавычек, и снимает сами кавычки: "Насос; старый";12А-5 → 2 столбца.
+func splitQuoted(s, sep string) []string {
+	var out []string
+	var cur strings.Builder
+	inQuotes := false
+	runes := []rune(s)
+	sepRunes := []rune(sep)
+	for i := 0; i < len(runes); i++ {
+		c := runes[i]
+		switch {
+		case inQuotes && c == '"':
+			// удвоенная кавычка внутри поля — это одна кавычка
+			if i+1 < len(runes) && runes[i+1] == '"' {
+				cur.WriteRune('"')
+				i++
+			} else {
+				inQuotes = false
+			}
+		case !inQuotes && c == '"':
+			inQuotes = true
+		case !inQuotes && len(sepRunes) == 1 && c == sepRunes[0]:
+			out = append(out, strings.TrimSpace(cur.String()))
+			cur.Reset()
+		default:
+			cur.WriteRune(c)
+		}
 	}
-	return parts
+	out = append(out, strings.TrimSpace(cur.String()))
+	return out
 }
 
 // expandTemplate подставляет столбцы строки данных в шаблон этикетки.

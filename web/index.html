@@ -40,8 +40,9 @@
         <button id="csv-btn" class="ghost">Загрузить CSV</button>
         <input type="file" id="csv-file" accept=".csv,.txt" hidden>
         <span id="series-count" class="hint">0 этикеток</span>
+        <label class="check"><input type="checkbox" id="csv-header" checked> первая строка — заголовки</label>
       </div>
-      <p class="hint">Столбцы разделяйте <code>;</code> — они подставляются в шаблон. Excel сохраните как CSV.</p>
+      <p class="hint">Excel: «Сохранить как» → CSV. Столбцы подставляются в шаблон как <code>{1}</code>, <code>{2}</code>…</p>
 
       <label>Шаблон этикетки <small>необязательно: каждая строка шаблона — строка на этикетке, <code>{1}</code>, <code>{2}</code>… — столбцы данных</small>
         <textarea id="template" rows="4" placeholder="{1}|{2}"></textarea>

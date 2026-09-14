@@ -261,14 +261,43 @@ $('templates').addEventListener('change', (e) => {
 
 $('csv-btn').onclick = () => $('csv-file').click();
 
+// Разбор строки CSV: учитывает кавычки и удвоенные кавычки внутри поля.
+// Разделителем считается ; , или табуляция — что встретится первым.
+function parseCsvLine(line) {
+  const sep = line.includes('\t') ? '\t' : (line.includes(';') ? ';' : ',');
+  const out = [];
+  let cur = '', inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (line[i + 1] === '"') { cur += '"'; i++; }
+        else inQuotes = false;
+      } else cur += c;
+    } else if (c === '"') {
+      inQuotes = true;
+    } else if (c === sep) {
+      out.push(cur); cur = '';
+    } else cur += c;
+  }
+  out.push(cur);
+  return out.map((s) => s.trim());
+}
+
 $('csv-file').addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if (!file) return;
   const text = await file.text();
-  const lines = text.split(/\r?\n/)
-    .map((l) => l.split(/[;,\t]/)[0])   // первый столбец
-    .map((s) => s.replace(/^"|"$/g, '').trim())
-    .filter((s) => s.length > 0);
+
+  let rows = text.split(/\r?\n/)
+    .map(parseCsvLine)
+    .filter((cols) => cols.some((c) => c.length > 0));
+
+  // Строку заголовков из Excel отбрасываем, если попросили.
+  if ($('csv-header').checked && rows.length > 1) rows = rows.slice(1);
+
+  // Все столбцы сохраняем: их подставляет шаблон этикетки.
+  const lines = rows.map((cols) => cols.join(';'));
 
   $('series-text').value = lines.join('\n');
   updateSeriesCount();
