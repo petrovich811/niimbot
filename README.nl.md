@@ -65,8 +65,8 @@ go build -o niimbot .
 # afbeelding
 ./niimbot image logo.png
 
-# tweemaal zo donker, twee exemplaren
-./niimbot text "GRK" "inv. 4210" --density 3 --copies 2
+# donkerder, twee exemplaren — een voor de flip, een voor de catalogus
+./niimbot text "2 gulden 1785" "Utrecht" --density 3 --copies 2
 ```
 
 ### Opties

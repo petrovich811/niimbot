@@ -64,8 +64,8 @@ go build -o niimbot .
 # print an image
 ./niimbot image logo.png
 
-# darker, two copies
-./niimbot text "TAG" "inv. 4210" --density 3 --copies 2
+# darker, two copies — one for the flip, one for the catalogue
+./niimbot text "2 gulden 1785" "Utrecht" --density 3 --copies 2
 ```
 
 ### Flags

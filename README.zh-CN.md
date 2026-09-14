@@ -63,8 +63,8 @@ go build -o niimbot .
 # 打印图片
 ./niimbot image logo.png
 
-# 加浓一档，打印两份
-./niimbot text "ГРК" "编号 4210" --density 3 --copies 2
+# 加浓一档，打印两份 —— 一份贴硬币夹，一份入册
+./niimbot text "2 盾 1785" "乌得勒支" --density 3 --copies 2
 ```
 
 ### 参数

@@ -65,8 +65,8 @@ go build -o niimbot .
 # картинка
 ./niimbot image logo.png
 
-# печать вдвое плотнее, две копии
-./niimbot text "ГРК" "инв. 4210" --density 3 --copies 2
+# темнее и по две копии — на холдер и в каталог
+./niimbot text "2 гульдена 1785" "Утрехт" --density 3 --copies 2
 ```
 
 ### Флаги

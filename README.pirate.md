@@ -68,8 +68,8 @@ go build -o niimbot .
 # a picture
 ./niimbot image logo.png
 
-# twice as dark, two copies
-./niimbot text "GRK" "inv. 4210" --density 3 --copies 2
+# darker, two copies — one fer the flip, one fer the logbook
+./niimbot text "2 gulden 1785" "Utrecht" --density 3 --copies 2
 ```
 
 ### Riggin'
