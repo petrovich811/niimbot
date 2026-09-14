@@ -159,6 +159,19 @@ regel** — zo ziet elke etiket in de reeks er hetzelfde uit. Extra kolommen wor
 genegeerd. Zijn het er minder, dan **weigert de driver te printen** en zegt welke
 ontbreekt, in plaats van een letterlijke `{3}` op het etiket te zetten.
 
+**Kolomvolgorde.** Staan de kolommen in de tabel in een andere volgorde dan op het
+etiket nodig is, dan hoeft Excel niet omgegooid te worden — zet gewoon de
+kolomnummers van boven naar beneden, door komma's gescheiden:
+
+```
+4, 1, 2, 5
+```
+
+Dat betekent: de eerste regel van het etiket is kolom 4, de tweede 1, dan 2 en 5. Een
+kolom die je weglaat (hier de derde) komt niet op het etiket, en dezelfde kolom mag
+twee keer voorkomen. Het veld «Etikeksjabloon» vult zichzelf: `{4}`, `{1}`, `{2}`,
+`{5}` — en dat kun je daarna aanvullen, bijvoorbeeld `TAG {2}`.
+
 ## Etiketten en oriëntatie
 
 ### Labeltypen

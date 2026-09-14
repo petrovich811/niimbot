@@ -157,6 +157,19 @@ line** — every label in the series then has the same layout. Extra columns are
 ignored. If there are fewer, the driver **refuses to print** and says which one is
 missing, instead of printing a literal `{3}` on the label.
 
+**Column order.** If the table's columns are not in the order you want on the label,
+there is no need to rearrange Excel — just list the column numbers top to bottom,
+comma-separated:
+
+```
+4, 1, 2, 5
+```
+
+That means: the label's first line is column 4, the second is 1, then 2 and 5. A
+column you leave out (the third here) never reaches the label, and the same column
+may be listed twice. The template field fills itself in — `{4}`, `{1}`, `{2}`, `{5}` —
+and you can then add to it, e.g. `TAG {2}`.
+
 ## Labels and orientation
 
 ### Label types

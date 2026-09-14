@@ -133,7 +133,10 @@ func (p *Printer) warmUp(adapter *bluetooth.Adapter, mac string) error {
 	p.log("Сканирую, чтобы BlueZ увидел принтер …")
 
 	go func() {
-		err := adapter.Scan(func(_ *bluetooth.Adapter, r bluetooth.ScanResult) {
+		// Ошибку здесь не показываем: сканирование останавливаем мы сами,
+		// и библиотека сообщает об этом как о неожиданном завершении.
+		// Раньше это выглядело как сбой — «сканирование прервано».
+		_ = adapter.Scan(func(_ *bluetooth.Adapter, r bluetooth.ScanResult) {
 			if strings.EqualFold(r.Address.String(), want) {
 				once.Do(func() {
 					p.log("  принтер на связи: %s (%s)", r.LocalName(), r.Address.String())
@@ -141,9 +144,6 @@ func (p *Printer) warmUp(adapter *bluetooth.Adapter, mac string) error {
 				})
 			}
 		})
-		if err != nil {
-			p.log("  сканирование прервано: %v", err)
-		}
 	}()
 
 	select {

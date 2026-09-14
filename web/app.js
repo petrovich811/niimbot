@@ -99,6 +99,7 @@ function applySettings(s) {
   if (s.label !== undefined) $('label').value = s.label;
   if (s.copies) $('copies').value = s.copies;
   if (s.template !== undefined) $('template').value = s.template;
+  if (s.colorder !== undefined) $('colorder').value = s.colorder;
   $('flip').checked = !!s.flip;
 }
 
@@ -229,6 +230,7 @@ async function saveTemplate() {
     length: s.length, font: s.font, density: s.density,
     label: s.label, copies: s.copies, flip: s.flip,
     template: s.template,
+    colorder: $('colorder').value,
   };
   const r = await fetch('/api/templates', {
     method: 'POST',
@@ -256,6 +258,20 @@ $('templates').addEventListener('change', (e) => {
   const opt = e.target.selectedOptions[0];
   if (opt && opt.dataset.tpl) applySettings(JSON.parse(opt.dataset.tpl));
 });
+
+
+// Порядок столбцов — сокращение для шаблона: «4, 1, 2, 5» означает
+// четыре строки на этикетке: столбец 4, затем 1, затем 2, затем 5.
+// Заполняет поле шаблона, чтобы было видно, что именно уйдёт на печать.
+function applyColumnOrder() {
+  const raw = $('colorder').value.trim();
+  if (!raw) return;
+  const nums = raw.split(/[^0-9]+/).filter((s) => s.length > 0);
+  if (!nums.length) return;
+  $('template').value = nums.map((n) => `{${n}}`).join('\n');
+}
+
+$('colorder').addEventListener('input', applyColumnOrder);
 
 // ---------------------------------------------------------------------- CSV
 
@@ -298,6 +314,12 @@ $('csv-file').addEventListener('change', async (e) => {
 
   // Все столбцы сохраняем: их подставляет шаблон этикетки.
   const lines = rows.map((cols) => cols.join(';'));
+
+  // Подсказываем, сколько столбцов в данных: по нему выбирают порядок.
+  const width = rows.reduce((m, cols) => Math.max(m, cols.length), 0);
+  $('csv-cols').textContent = width
+    ? `в данных ${width} ${plural(width, 'столбец', 'столбца', 'столбцов')}`
+    : '';
 
   $('series-text').value = lines.join('\n');
   updateSeriesCount();

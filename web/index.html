@@ -40,9 +40,15 @@
         <button id="csv-btn" class="ghost">Загрузить CSV</button>
         <input type="file" id="csv-file" accept=".csv,.txt" hidden>
         <span id="series-count" class="hint">0 этикеток</span>
+        <span id="csv-cols" class="hint"></span>
         <label class="check"><input type="checkbox" id="csv-header" checked> первая строка — заголовки</label>
       </div>
       <p class="hint">Excel: «Сохранить как» → CSV. Столбцы подставляются в шаблон как <code>{1}</code>, <code>{2}</code>…</p>
+
+      <label>Порядок столбцов на этикетке
+        <input type="text" id="colorder" placeholder="4, 1, 2, 5">
+        <small>Номера столбцов сверху вниз. Например <code>4, 1, 2, 5</code> — на первой строке этикетки столбец 4, на второй — 1, дальше 2 и 5. Шаблон ниже заполнится сам.</small>
+      </label>
 
       <label>Шаблон этикетки <small>необязательно: каждая строка шаблона — строка на этикетке, <code>{1}</code>, <code>{2}</code>… — столбцы данных</small>
         <textarea id="template" rows="4" placeholder="{1}|{2}"></textarea>

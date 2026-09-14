@@ -161,6 +161,19 @@ line** — every label in the fleet then looks alike. Extra columns be ignored. 
 there be fewer, the driver **refuses to print** an' tells ye which one be missin',
 instead of layin' a literal `{3}` on the label.
 
+**Column order.** If the table's columns be not in the order ye want on the label,
+ye need not toss Excel about — just list the column numbers from top to bottom,
+split by commas:
+
+```
+4, 1, 2, 5
+```
+
+That means: the label's first line be column 4, the second be 1, then 2 an' 5. A
+column ye leave out (the third here) never reaches the label, an' the same column
+may be listed twice. The «Label template» field fills herself in — `{4}`, `{1}`,
+`{2}`, `{5}` — an' ye can add to her after, e.g. `TAG {2}`.
+
 ## Labels an' Which Way Up She Prints
 
 ### Kinds o' Labels

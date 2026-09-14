@@ -387,3 +387,22 @@ func TestSplitFieldsQuotes(t *testing.T) {
 		}
 	}
 }
+
+// Разбор адреса принтера. На Linux и Windows это MAC; на macOS — UUID,
+// и там работает своя реализация (addr_darwin.go).
+func TestMakeAddress(t *testing.T) {
+	addr, err := makeAddress("24:0A:11:D9:EC:C3")
+	if err != nil {
+		t.Fatalf("адрес не разобран: %v", err)
+	}
+	if got := strings.ToUpper(addr.String()); got != "24:0A:11:D9:EC:C3" {
+		t.Fatalf("адрес разобран как %q", got)
+	}
+
+	// Мусор должен давать ошибку, а не молча пустой адрес.
+	for _, bad := range []string{"", "не-адрес", "12345"} {
+		if _, err := makeAddress(bad); err == nil {
+			t.Fatalf("для %q ожидалась ошибка", bad)
+		}
+	}
+}
