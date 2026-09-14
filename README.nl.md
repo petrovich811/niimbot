@@ -13,7 +13,7 @@ Geen app van de fabrikant, geen telefoon, geen account — alleen Linux, Bluetoo
 en één commando.
 
 ```console
-$ niimbot text "Pomp" "12A-5"
+$ niimbot text "1 gulden" "1734"
 ```
 
 ## Mogelijkheden
@@ -57,10 +57,10 @@ go build -o niimbot .
 ./niimbot info
 
 # proefontwerp zonder printen (komt in /tmp/niimbot_label_preview.png)
-./niimbot preview "Pomp" "12A-5"
+./niimbot preview "1 gulden" "1734"
 
 # tekst printen
-./niimbot text "Pomp" "12A-5"
+./niimbot text "1 gulden" "1734"
 
 # afbeelding
 ./niimbot image logo.png
@@ -103,7 +103,7 @@ roept dezelfde functies aan als de opdrachtregel.
 | **Status** | model, serienummer, accu, labeltype, rest van rol en lint |
 | **Voortgang** | «N van M geprint» tijdens een reeks |
 
-Een `|` in een regel begint een nieuwe regel binnen één etiket: `Pomp|12A-5` zet
+Een `|` in een regel begint een nieuwe regel binnen één etiket: `1 gulden|1734` zet
 twee regels op het etiket. Sjablonen staan in `~/.config/niimbot/templates.json`.
 
 ### Een reeks etiketten met meerdere regels: sjabloon + gegevens
@@ -122,9 +122,9 @@ Als elk etiket in een reeks uit meerdere regels moet bestaan, gebruik dan een
 **Gegevens** (één record per regel, kolommen met `;`):
 
 ```
-Centrifugaalpomp;12A-5;14.09.2026
-Schuifafsluiter;12B-1;14.09.2026
-Regelklep;12B-2;14.09.2026
+West-Friesland;1 gulden 1734;XF
+Holland;1 gulden 1762;VF
+Utrecht;2 gulden 1785;UNC
 ```
 
 Dat print **drie etiketten van elk drie regels**: `{1}`, `{2}`, `{3}` zijn de
@@ -149,12 +149,12 @@ tabel gaat als reeks naar de printer.
 5. Bekijk het **proefontwerp** en druk op **Printen**.
 
 Het vakje «eerste rij is een kopregel» laat de kop van de tabel weg. Aanhalingstekens
-beschermen een scheidingsteken binnen een veld: `"Pomp; reserve";12A-5` zijn twee
+beschermen een scheidingsteken binnen een veld: `"KM# 90; Verkade 45.2";XF` zijn twee
 kolommen, geen drie.
 
 **Over de kolommen.** Er moeten er **minstens zoveel** zijn als het hoogste getal in
 het sjabloon: een sjabloon met `{3}` vraagt drie kolommen. Excel vult lege cellen
-zelf aan, dus `Pomp;;14.09.2026` zijn drie kolommen en het etiket houdt een **lege
+zelf aan, dus `West-Friesland;;XF` zijn drie kolommen en het etiket houdt een **lege
 regel** — zo ziet elke etiket in de reeks er hetzelfde uit. Extra kolommen worden
 genegeerd. Zijn het er minder, dan **weigert de driver te printen** en zegt welke
 ontbreekt, in plaats van een letterlijke `{3}` op het etiket te zetten.

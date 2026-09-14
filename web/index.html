@@ -27,14 +27,14 @@
 
     <div id="pane-single" class="pane">
       <label>Текст этикетки
-        <textarea id="single-text" rows="3" placeholder="Насос|12А-5">Насос|12А-5</textarea>
+        <textarea id="single-text" rows="3" placeholder="1 гульден|1734">1 гульден|1734</textarea>
       </label>
       <p class="hint">Разделитель <code>|</code> переносит текст на новую строку внутри этикетки.</p>
     </div>
 
     <div id="pane-series" class="pane hidden">
       <label>Список этикеток — по одной в строке
-        <textarea id="series-text" rows="10" placeholder="Насос 1|12А-5&#10;Насос 2|12А-6&#10;Насос 3|12А-7"></textarea>
+        <textarea id="series-text" rows="10" placeholder="Зап. Фрисландия;1 гульден 1734;XF&#10;Голландия;1 гульден 1762;VF&#10;Утрехт;2 гульдена 1785;UNC"></textarea>
       </label>
       <div class="row">
         <button id="csv-btn" class="ghost">Загрузить CSV</button>
@@ -51,7 +51,7 @@
       </label>
 
       <label>Шаблон этикетки <small>необязательно: каждая строка шаблона — строка на этикетке, <code>{1}</code>, <code>{2}</code>… — столбцы данных</small>
-        <textarea id="template" rows="4" placeholder="{1}|{2}"></textarea>
+        <textarea id="template" rows="4" placeholder="{1}&#10;{2}&#10;{3}"></textarea>
       </label>
       <p class="hint">Без шаблона одна строка данных = одна этикетка, а <code>|</code> переносит текст на новую строку.</p>
     </div>

@@ -16,7 +16,7 @@ the state o' the printer, an' can draw ye a mock-up without wastin' a single lab
 No vendor app, no phone, no account — just Linux, Bluetooth an' one command.
 
 ```console
-$ niimbot text "Pump" "12A-5"
+$ niimbot text "1 gulden" "1734"
 ```
 
 ## What She Can Do
@@ -60,10 +60,10 @@ go build -o niimbot .
 ./niimbot info
 
 # draw the mock-up, waste no label (lands in /tmp/niimbot_label_preview.png)
-./niimbot preview "Pump" "12A-5"
+./niimbot preview "1 gulden" "1734"
 
 # print the words
-./niimbot text "Pump" "12A-5"
+./niimbot text "1 gulden" "1734"
 
 # a picture
 ./niimbot image logo.png
@@ -106,7 +106,7 @@ the window calls the very same functions the command line does.
 | **Status** | model, serial, battery, label kind, what be left on the roll an' the ribbon |
 | **Progress** | «N of M printed» while the fleet sails |
 
-A `|` in a line starts a new line on one label: `Pump|12A-5` lays two lines down.
+A `|` in a line starts a new line on one label: `1 gulden|1734` lays two lines down.
 Templates live in `~/.config/niimbot/templates.json`.
 
 ### A Fleet o' Many-Lined Labels: Template + Cargo
@@ -125,9 +125,9 @@ an' a **cargo table** — the way the proper label-folk do it.
 **The cargo** (one record to a line, columns split by `;`):
 
 ```
-Centrifugal pump;12A-5;14.09.2026
-Gate valve;12B-1;14.09.2026
-Control valve;12B-2;14.09.2026
+West Frisia;1 gulden 1734;XF
+Holland;1 gulden 1762;VF
+Utrecht;2 gulden 1785;UNC
 ```
 
 That prints **three labels o' three lines each**: `{1}`, `{2}`, `{3}` be the
@@ -152,11 +152,11 @@ table goes to the printer as a fleet.
 5. Eye the **mock-up** an' press **Print**.
 
 The «first row be a header» box makes the table's header walk the plank. Quotes
-shield a separator inside a field: `"Pump; spare";12A-5` be two columns, not three.
+shield a separator inside a field: `"KM# 90; Verkade 45.2";XF` be two columns, not three.
 
 **About the columns.** There must be **at least as many** as the highest number in
 the template: a template usin' `{3}` wants three columns. Excel pads empty cells
-herself, so `Pump;;2026-09-14` be three columns, an' the label keeps an **empty
+herself, so `West Frisia;;XF` be three columns, an' the label keeps an **empty
 line** — every label in the fleet then looks alike. Extra columns be ignored. If
 there be fewer, the driver **refuses to print** an' tells ye which one be missin',
 instead of layin' a literal `{3}` on the label.

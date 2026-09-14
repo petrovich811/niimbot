@@ -12,7 +12,7 @@ status, and can render a preview without wasting a label.
 No vendor app, no phone, no account — just Linux, Bluetooth and one command.
 
 ```console
-$ niimbot text "Pump" "12A-5"
+$ niimbot text "1 gulden" "1734"
 ```
 
 ## Features
@@ -56,10 +56,10 @@ go build -o niimbot .
 ./niimbot info
 
 # render only (saved to /tmp/niimbot_label_preview.png)
-./niimbot preview "Pump" "12A-5"
+./niimbot preview "1 gulden" "1734"
 
 # print text
-./niimbot text "Pump" "12A-5"
+./niimbot text "1 gulden" "1734"
 
 # print an image
 ./niimbot image logo.png
@@ -102,7 +102,7 @@ the same functions the command line does.
 | **Status** | model, serial, battery, label type, labels and ribbon left |
 | **Progress** | "printed N of M" while a series runs |
 
-A `|` in a line starts a new line inside one label: `Pump|12A-5` puts two lines
+A `|` in a line starts a new line inside one label: `1 gulden|1734` puts two lines
 on the label. Templates live in `~/.config/niimbot/templates.json`.
 
 ### A series of multi-line labels: template + data
@@ -121,9 +121,9 @@ When every label in a series needs several lines, use a **label template** and a
 **Data** (one record per line, columns separated by `;`):
 
 ```
-Centrifugal pump;12A-5;2026-09-14
-Gate valve;12B-1;2026-09-14
-Control valve;12B-2;2026-09-14
+West Frisia;1 gulden 1734;XF
+Holland;1 gulden 1762;VF
+Utrecht;2 gulden 1785;UNC
 ```
 
 That prints **three labels with three lines each**: `{1}`, `{2}`, `{3}` are the
@@ -131,7 +131,7 @@ record's columns.
 
 | Rule | How it works |
 |---|---|
-| Template lines | every template line becomes one line on the label; empty lines are skipped |
+| Template lines | every template line becomes one line on the label; trailing empty lines are dropped |
 | Columns | separated by `;`, `,` or a tab — whichever comes first |
 | Reusing a column | `TAG {2}` puts a column anywhere in the line |
 | Without a template | one data line is one label, and `\|` inside it breaks the line |
@@ -148,11 +148,11 @@ the whole table prints as a series.
 5. Check the **mock-up** and press **Print**.
 
 The "first row is a header" checkbox drops the table's header. Quotes protect a
-separator inside a field: `"Pump; spare";12A-5` is two columns, not three.
+separator inside a field: `"KM# 90; Verkade 45.2";XF` is two columns, not three.
 
 **About the columns.** There must be **at least as many** as the highest number in
 the template: a template using `{3}` needs three columns. Excel pads empty cells
-itself, so `Pump;;2026-09-14` is three columns, and the label keeps an **empty
+itself, so `West Frisia;;XF` is three columns, and the label keeps an **empty
 line** — every label in the series then has the same layout. Extra columns are
 ignored. If there are fewer, the driver **refuses to print** and says which one is
 missing, instead of printing a literal `{3}` on the label.
