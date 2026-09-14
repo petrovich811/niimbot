@@ -154,6 +154,13 @@ table goes to the printer as a fleet.
 The «first row be a header» box makes the table's header walk the plank. Quotes
 shield a separator inside a field: `"Pump; spare";12A-5` be two columns, not three.
 
+**About the columns.** There must be **at least as many** as the highest number in
+the template: a template usin' `{3}` wants three columns. Excel pads empty cells
+herself, so `Pump;;2026-09-14` be three columns, an' the label keeps an **empty
+line** — every label in the fleet then looks alike. Extra columns be ignored. If
+there be fewer, the driver **refuses to print** an' tells ye which one be missin',
+instead of layin' a literal `{3}` on the label.
+
 ## Labels an' Which Way Up She Prints
 
 ### Kinds o' Labels

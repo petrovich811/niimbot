@@ -15,6 +15,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 	"sync"
@@ -262,22 +263,37 @@ func splitQuoted(s, sep string) []string {
 	return out
 }
 
+// rePlaceholder находит неподставленные {1}, {2}… в строке этикетки.
+var rePlaceholder = regexp.MustCompile(`\{\d+\}`)
+
 // expandTemplate подставляет столбцы строки данных в шаблон этикетки.
 //
-// Каждая строка шаблона становится строкой этикетки: так из одной записи
-// данных получается многострочная этикетка. {1}, {2}… — столбцы.
-func expandTemplate(tpl string, row []string) []string {
-	var out []string
-	for _, line := range strings.Split(tpl, "\n") {
+// Каждая строка шаблона становится строкой этикетки — включая пустые:
+// так раскладка одинакова у всех этикеток серии, даже если какое-то поле
+// пустое. Пустые строки в конце шаблона отбрасываются.
+//
+// Если шаблон ссылается на столбец, которого в данных нет, возвращается
+// ошибка: иначе на этикетке напечаталось бы литеральное «{3}» — брак,
+// который на бумаге уже не исправить.
+func expandTemplate(tpl string, row []string) ([]string, error) {
+	lines := strings.Split(tpl, "\n")
+	for len(lines) > 0 && strings.TrimSpace(lines[len(lines)-1]) == "" {
+		lines = lines[:len(lines)-1]
+	}
+
+	out := make([]string, 0, len(lines))
+	for _, line := range lines {
 		for i, v := range row {
 			line = strings.ReplaceAll(line, fmt.Sprintf("{%d}", i+1), v)
 		}
-		line = strings.TrimRight(line, " \t")
-		if strings.TrimSpace(line) != "" {
-			out = append(out, line)
+		if bad := rePlaceholder.FindString(line); bad != "" {
+			return nil, fmt.Errorf(
+				"шаблон использует %s, а в данных только %d столбц(а/ов). "+
+					"Проверьте, что в CSV столько же столбцов, сколько в шаблоне", bad, len(row))
 		}
+		out = append(out, strings.TrimRight(line, " \t"))
 	}
-	return out
+	return out, nil
 }
 
 // splitLabel превращает текст этикетки в строки: «A|B» → две строки.
@@ -304,7 +320,11 @@ func renderPages(req printRequest) ([][]Row, error) {
 	for _, item := range req.Items {
 		var lines []string
 		if strings.TrimSpace(req.Template) != "" {
-			lines = expandTemplate(req.Template, splitFields(item))
+			var err error
+			lines, err = expandTemplate(req.Template, splitFields(item))
+			if err != nil {
+				return nil, fmt.Errorf("строка данных %q: %w", item, err)
+			}
 		} else {
 			lines = splitLabel(item)
 		}
@@ -385,7 +405,12 @@ func apiPreview(w http.ResponseWriter, req printRequest) {
 	if len(req.Items) > 0 {
 		var l []string
 		if strings.TrimSpace(req.Template) != "" {
-			l = expandTemplate(req.Template, splitFields(req.Items[0]))
+			var err error
+			l, err = expandTemplate(req.Template, splitFields(req.Items[0]))
+			if err != nil {
+				writeErr(w, http.StatusBadRequest, err)
+				return
+			}
 		} else {
 			l = splitLabel(req.Items[0])
 		}

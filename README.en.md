@@ -150,6 +150,13 @@ the whole table prints as a series.
 The "first row is a header" checkbox drops the table's header. Quotes protect a
 separator inside a field: `"Pump; spare";12A-5` is two columns, not three.
 
+**About the columns.** There must be **at least as many** as the highest number in
+the template: a template using `{3}` needs three columns. Excel pads empty cells
+itself, so `Pump;;2026-09-14` is three columns, and the label keeps an **empty
+line** — every label in the series then has the same layout. Extra columns are
+ignored. If there are fewer, the driver **refuses to print** and says which one is
+missing, instead of printing a literal `{3}` on the label.
+
 ## Labels and orientation
 
 ### Label types

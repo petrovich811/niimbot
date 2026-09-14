@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"image/color"
+	"strings"
 	"testing"
 )
 
@@ -288,7 +289,10 @@ func TestExpandTemplate(t *testing.T) {
 		t.Fatalf("разбор столбцов: %q", row)
 	}
 
-	lines := expandTemplate("{1}\n{2}\n{3}", row)
+	lines, err := expandTemplate("{1}\n{2}\n{3}", row)
+	if err != nil {
+		t.Fatalf("неожиданная ошибка: %v", err)
+	}
 	want := []string{"Насос центробежный", "12А-5", "14.09.2026"}
 	if len(lines) != len(want) {
 		t.Fatalf("строк %d, ожидалось %d: %q", len(lines), len(want), lines)
@@ -300,14 +304,43 @@ func TestExpandTemplate(t *testing.T) {
 	}
 
 	// Столбец можно использовать несколько раз и вместе с обычным текстом.
-	lines = expandTemplate("ТЕГ {2}\n{1}", row)
+	lines, _ = expandTemplate("ТЕГ {2}\n{1}", row)
 	if len(lines) != 2 || lines[0] != "ТЕГ 12А-5" || lines[1] != "Насос центробежный" {
 		t.Fatalf("подстановка с текстом: %q", lines)
 	}
 
-	// Пустые строки шаблона на этикетку не попадают.
-	if got := expandTemplate("{1}\n\n{2}", row); len(got) != 2 {
-		t.Fatalf("пустые строки не отброшены: %q", got)
+	// Пустая строка в середине шаблона сохраняется: раскладка должна быть
+	// одинаковой у всех этикеток серии.
+	lines, _ = expandTemplate("{1}\n\n{3}", row)
+	if len(lines) != 3 || lines[1] != "" {
+		t.Fatalf("пустая строка шаблона потеряна: %q", lines)
+	}
+
+	// Пустое значение столбца оставляет строку пустой, а не съедает её.
+	lines, _ = expandTemplate("{1}\n{2}\n{3}", []string{"Насос", "", "14.09.2026"})
+	if len(lines) != 3 || lines[1] != "" {
+		t.Fatalf("пустое значение сдвинуло раскладку: %q", lines)
+	}
+
+	// Пустые строки в конце шаблона отбрасываются.
+	lines, _ = expandTemplate("{1}\n\n\n", row)
+	if len(lines) != 1 {
+		t.Fatalf("хвостовые пустые строки не убраны: %q", lines)
+	}
+}
+
+// Ссылка на столбец, которого нет в данных, — ошибка, а не литерал «{3}»
+// на этикетке. Проверено: раньше печаталось именно «{3}».
+func TestExpandTemplateMissingColumn(t *testing.T) {
+	_, err := expandTemplate("{1}\n{2}\n{3}", []string{"Насос", "12А-5"})
+	if err == nil {
+		t.Fatal("ожидалась ошибка про недостающий столбец")
+	}
+	if !strings.Contains(err.Error(), "{3}") {
+		t.Fatalf("в ошибке нет имени столбца: %v", err)
+	}
+	if !strings.Contains(err.Error(), "2") {
+		t.Fatalf("в ошибке не сказано, сколько столбцов пришло: %v", err)
 	}
 }
 

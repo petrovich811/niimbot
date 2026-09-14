@@ -152,6 +152,13 @@ Het vakje «eerste rij is een kopregel» laat de kop van de tabel weg. Aanhaling
 beschermen een scheidingsteken binnen een veld: `"Pomp; reserve";12A-5` zijn twee
 kolommen, geen drie.
 
+**Over de kolommen.** Er moeten er **minstens zoveel** zijn als het hoogste getal in
+het sjabloon: een sjabloon met `{3}` vraagt drie kolommen. Excel vult lege cellen
+zelf aan, dus `Pomp;;14.09.2026` zijn drie kolommen en het etiket houdt een **lege
+regel** — zo ziet elke etiket in de reeks er hetzelfde uit. Extra kolommen worden
+genegeerd. Zijn het er minder, dan **weigert de driver te printen** en zegt welke
+ontbreekt, in plaats van een letterlijke `{3}` op het etiket te zetten.
+
 ## Etiketten en oriëntatie
 
 ### Labeltypen
