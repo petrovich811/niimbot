@@ -4,3 +4,7 @@
 # макеты этикеток
 /niimbot_label_preview.png
 /preview/
+
+# собранные бинарники для других систем
+*.exe
+niimbot-*

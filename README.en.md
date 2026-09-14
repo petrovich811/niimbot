@@ -345,6 +345,29 @@ and the white canvas background.
 - printing on label types other than `withgaps`;
 - other NIIMBOT models (they need their own printhead parameters).
 
+## Building for other systems
+
+The driver is written in Go, so it builds for Linux, Windows and macOS:
+
+```bash
+go build -o niimbot .                                  # your own system
+GOOS=windows GOARCH=amd64 go build -o niimbot.exe .    # Windows, from Linux too
+GOOS=darwin  GOARCH=arm64 go build -o niimbot-mac .    # macOS — ON a Mac only
+```
+
+| System | State |
+|---|---|
+| **Linux** | works, verified on real hardware |
+| **Windows** | cross-compiles from Linux unchanged; not yet tried on real hardware |
+| **macOS** | **must be built on a Mac**: Bluetooth there is CoreBluetooth, and its binding needs CGO and Apple frameworks. Cross-building from Linux is impossible |
+
+**A macOS quirk:** the system never reveals real Bluetooth addresses — it hands out
+a UUID instead of a MAC. So on a Mac the printer is found by scanning, and
+`--address` takes a UUID, not a MAC.
+
+**The font** is found automatically: DejaVu/Noto/Liberation on Linux, Arial/Segoe UI
+on Windows, Arial/Helvetica on macOS. Set `NIIMBOT_FONT` to use your own.
+
 ## Related projects
 
 If there is no Linux box next to the printer, there are other roads:

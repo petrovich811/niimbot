@@ -25,20 +25,43 @@ import (
 
 const feedMargin = 6 // отступ в точках
 
+// fontCandidates — шрифты с кириллицей для трёх систем.
+// Жирные варианты идут первыми: на этикетке мелкий текст читается лучше.
 var fontCandidates = []string{
+	// Linux
 	"/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
 	"/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+	"/usr/share/fonts/truetype/noto/NotoSans-Bold.ttf",
 	"/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",
+	"/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
 	"/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+	// Windows
+	`C:\Windows\Fonts\arialbd.ttf`,
+	`C:\Windows\Fonts\seguisb.ttf`,
+	`C:\Windows\Fonts\arial.ttf`,
+	`C:\Windows\Fonts\segoeui.ttf`,
+	`C:\Windows\Fonts\tahoma.ttf`,
+	// macOS
+	"/System/Library/Fonts/Supplemental/Arial Bold.ttf",
+	"/System/Library/Fonts/Supplemental/Arial.ttf",
+	"/Library/Fonts/Arial Bold.ttf",
+	"/Library/Fonts/Arial.ttf",
+	"/System/Library/Fonts/Helvetica.ttc",
 }
 
+// fontEnvVar позволяет указать свой шрифт, если ничего не нашлось.
+const fontEnvVar = "NIIMBOT_FONT"
+
 func findFontFile() (string, error) {
+	if custom := os.Getenv(fontEnvVar); custom != "" {
+		return custom, nil
+	}
 	for _, p := range fontCandidates {
 		if _, err := os.Stat(p); err == nil {
 			return p, nil
 		}
 	}
-	return "", fmt.Errorf("не нашёл TTF-шрифт с кириллицей")
+	return "", fmt.Errorf("не нашёл TTF-шрифт с кириллицей — укажите свой через %s", fontEnvVar)
 }
 
 func loadFace(path string, sizePt float64) (font.Face, error) {
@@ -51,8 +74,8 @@ func loadFace(path string, sizePt float64) (font.Face, error) {
 		return nil, err
 	}
 	return opentype.NewFace(f, &opentype.FaceOptions{
-		Size: sizePt,
-		DPI:  72, // кегль задаём в точках изображения напрямую
+		Size:    sizePt,
+		DPI:     72, // кегль задаём в точках изображения напрямую
 		Hinting: font.HintingFull,
 	})
 }
@@ -152,8 +175,8 @@ type Row []byte
 // выходит «вверх ногами» при том же направлении подачи.
 func ImageToRows(img *image.Gray, flip bool) []Row {
 	b := img.Bounds()
-	feedLen := b.Dx()   // строк подачи
-	across := b.Dy()    // точек поперёк головки
+	feedLen := b.Dx() // строк подачи
+	across := b.Dy()  // точек поперёк головки
 	bytesPerRow := across / 8
 
 	rows := make([]Row, 0, feedLen)

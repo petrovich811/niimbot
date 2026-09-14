@@ -20,39 +20,39 @@ const (
 
 // Команды: клиент → принтер
 const (
-	cmdConnect            = 0xC1
-	cmdPrintStart         = 0x01
-	cmdPageStart          = 0x03
-	cmdPageEnd            = 0xE3
-	cmdPrintEnd           = 0xF3
-	cmdPrintStatus        = 0xA3
-	cmdSetDensity         = 0x21
-	cmdSetLabelType       = 0x23
-	cmdSetPageSize        = 0x13
-	cmdPrintBitmapRow     = 0x85
-	cmdPrintBitmapRowIdx  = 0x83
-	cmdPrintEmptyRow      = 0x84
-	cmdPrinterInfo        = 0x40
-	cmdPrinterStatusData  = 0xA5
-	cmdHeartbeat          = 0xDC
-	cmdPrintTestPage      = 0x5A
-	cmdCancelPrint        = 0xDA
-	cmdRfidInfo           = 0x1A // метка рулона этикеток
-	cmdRfidInfo2          = 0x1C // метка ленты (риббона)
+	cmdConnect           = 0xC1
+	cmdPrintStart        = 0x01
+	cmdPageStart         = 0x03
+	cmdPageEnd           = 0xE3
+	cmdPrintEnd          = 0xF3
+	cmdPrintStatus       = 0xA3
+	cmdSetDensity        = 0x21
+	cmdSetLabelType      = 0x23
+	cmdSetPageSize       = 0x13
+	cmdPrintBitmapRow    = 0x85
+	cmdPrintBitmapRowIdx = 0x83
+	cmdPrintEmptyRow     = 0x84
+	cmdPrinterInfo       = 0x40
+	cmdPrinterStatusData = 0xA5
+	cmdHeartbeat         = 0xDC
+	cmdPrintTestPage     = 0x5A
+	cmdCancelPrint       = 0xDA
+	cmdRfidInfo          = 0x1A // метка рулона этикеток
+	cmdRfidInfo2         = 0x1C // метка ленты (риббона)
 )
 
 // Ответы: принтер → клиент (проверено на живом N1)
 const (
-	respConnect        = 0xC2
-	respPrintStart     = 0x02
-	respPageStart      = 0x04
-	respPageEnd        = 0xE4
-	respPrintEnd       = 0xF4
-	respPrintStatus    = 0xB3
-	respSetDensity     = 0x31
-	respPrintError     = 0xDB
-	respRfidInfo       = 0x1B // ответ на cmdRfidInfo
-	respRfidInfo2      = 0x1D // ответ на cmdRfidInfo2
+	respConnect     = 0xC2
+	respPrintStart  = 0x02
+	respPageStart   = 0x04
+	respPageEnd     = 0xE4
+	respPrintEnd    = 0xF4
+	respPrintStatus = 0xB3
+	respSetDensity  = 0x31
+	respPrintError  = 0xDB
+	respRfidInfo    = 0x1B // ответ на cmdRfidInfo
+	respRfidInfo2   = 0x1D // ответ на cmdRfidInfo2
 )
 
 // Статус принтера у N1 приходит кодом 0xB4 (в библиотеке указан 0xB5) —
@@ -121,7 +121,7 @@ func labelListN1() string {
 // Параметры N1 (из таблицы моделей NiimBlueLib, id 3586)
 const (
 	modelIDN1       = 3586
-	printheadPixels = 96  // точек в головке = 12 мм при 203 dpi
+	printheadPixels = 96 // точек в головке = 12 мм при 203 dpi
 	dotsPerMM       = 203.0 / 25.4
 	bleServiceUUID  = "e7810a71-73ae-499d-8c15-faa9aef0c3f2"
 )

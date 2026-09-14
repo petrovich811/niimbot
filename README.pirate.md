@@ -347,6 +347,29 @@ way rows lie an' the white canvas behind 'em.
 - printin' on label kinds other than `withgaps`;
 - other NIIMBOT models (they want their own printhead numbers).
 
+## Buildin' fer Other Ships
+
+The driver be writ in Go, so she builds fer Linux, Windows an' macOS:
+
+```bash
+go build -o niimbot .                                  # yer own ship
+GOOS=windows GOARCH=amd64 go build -o niimbot.exe .    # Windows, from Linux too
+GOOS=darwin  GOARCH=arm64 go build -o niimbot-mac .    # macOS — ON a Mac only
+```
+
+| Ship | State |
+|---|---|
+| **Linux** | sails, tried on real hardware |
+| **Windows** | cross-builds from Linux with no changes; not yet tried on real hardware |
+| **macOS** | **must be built ON a Mac**: Bluetooth there be CoreBluetooth, an' its bindin' wants CGO an' Apple's frameworks. Cross-buildin' from Linux be impossible |
+
+**A macOS quirk:** the system never hands out true Bluetooth addresses — it gives a
+UUID in place o' a MAC. So on a Mac the printer be found by scannin', an'
+`--address` wants a UUID, not a MAC.
+
+**The font** be found by herself: DejaVu/Noto/Liberation on Linux, Arial/Segoe UI on
+Windows, Arial/Helvetica on macOS. Set `NIIMBOT_FONT` to sail with yer own.
+
 ## Ships Sailin' the Same Waters
 
 If there be no Linux box beside the printer, other roads exist:

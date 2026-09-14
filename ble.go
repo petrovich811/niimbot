@@ -10,8 +10,8 @@
 package main
 
 import (
-	"os"
 	"fmt"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -69,9 +69,9 @@ func (p *Printer) log(format string, args ...any) {
 // устройство, иначе он отвечает ошибкой D-Bus
 // («Method "Get" … doesn't exist») — проверено.
 func ConnectMAC(mac string, verbose bool) (*Printer, error) {
-	m, err := bluetooth.ParseMAC(mac)
+	addr, err := makeAddress(mac)
 	if err != nil {
-		return nil, fmt.Errorf("неверный MAC %q: %w", mac, err)
+		return nil, fmt.Errorf("не разобрать адрес принтера %q: %w", mac, err)
 	}
 	var adapter = bluetooth.DefaultAdapter
 	if err := adapter.Enable(); err != nil {
@@ -83,7 +83,6 @@ func ConnectMAC(mac string, verbose bool) (*Printer, error) {
 		return nil, err
 	}
 
-	addr := bluetooth.Address{MACAddress: bluetooth.MACAddress{MAC: m}}
 	p.log("Подключаюсь к %s …", mac)
 
 	// Подключение выносим в горутину с таймаутом: у Linux-бэкенда вызов

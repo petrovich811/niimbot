@@ -19,6 +19,7 @@ import (
 	"image"
 	"image/png"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -370,7 +371,7 @@ func printInfo(i Info) {
 
 // savePreview сохраняет макет — удобно посмотреть, что уйдёт на печать.
 func savePreview(img *image.Gray) {
-	const path = "/tmp/niimbot_label_preview.png"
+	path := filepath.Join(os.TempDir(), "niimbot_label_preview.png")
 	f, err := os.Create(path)
 	if err != nil {
 		return

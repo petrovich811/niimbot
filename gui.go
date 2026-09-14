@@ -89,14 +89,14 @@ func (j *job) snapshot() job {
 
 // Template — сохранённый набор настроек под типовую задачу.
 type Template struct {
-	Name    string  `json:"name"`
-	Length  float64 `json:"length"`
-	Font    float64 `json:"font"`
-	Density int     `json:"density"`
-	Label   string  `json:"label"`
-	Copies   int    `json:"copies"`
-	Flip     bool   `json:"flip"`
-	Template string `json:"template"`
+	Name     string  `json:"name"`
+	Length   float64 `json:"length"`
+	Font     float64 `json:"font"`
+	Density  int     `json:"density"`
+	Label    string  `json:"label"`
+	Copies   int     `json:"copies"`
+	Flip     bool    `json:"flip"`
+	Template string  `json:"template"`
 }
 
 func templatesPath() string {
@@ -207,13 +207,13 @@ func apiStatus(address string) (map[string]any, error) {
 type printRequest struct {
 	Items    []string `json:"items"`    // строки данных: одна запись на этикетку
 	Template string   `json:"template"` // шаблон этикетки с {1}, {2}… (необязательно)
-	Length  float64  `json:"length"`
-	Font    float64  `json:"font"`
-	Density int      `json:"density"`
-	Label   string   `json:"label"`
-	Copies  int      `json:"copies"`
-	Flip    bool     `json:"flip"`
-	Address string   `json:"address"`
+	Length   float64  `json:"length"`
+	Font     float64  `json:"font"`
+	Density  int      `json:"density"`
+	Label    string   `json:"label"`
+	Copies   int      `json:"copies"`
+	Flip     bool     `json:"flip"`
+	Address  string   `json:"address"`
 }
 
 // splitFields разбирает строку данных на столбцы: ; , или табуляция.

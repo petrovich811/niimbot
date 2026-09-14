@@ -350,6 +350,30 @@ pakketten, de punttellers, de oriëntatie van regels en de witte achtergrond.
 - printen op andere labeltypen dan `withgaps`;
 - andere NIIMBOT-modellen (die hebben eigen printkopgegevens nodig).
 
+## Bouwen voor andere systemen
+
+De driver is in Go geschreven en bouwt dus voor Linux, Windows en macOS:
+
+```bash
+go build -o niimbot .                                  # je eigen systeem
+GOOS=windows GOARCH=amd64 go build -o niimbot.exe .    # Windows, ook vanaf Linux
+GOOS=darwin  GOARCH=arm64 go build -o niimbot-mac .    # macOS — alleen OP een Mac
+```
+
+| Systeem | Stand |
+|---|---|
+| **Linux** | werkt, getest op echte hardware |
+| **Windows** | kruiscompileert ongewijzigd vanaf Linux; nog niet op echte hardware geprobeerd |
+| **macOS** | **moet op een Mac gebouwd worden**: Bluetooth is daar CoreBluetooth en die binding vraagt CGO en Apple-frameworks. Kruiscompileren vanaf Linux kan niet |
+
+**Een macOS-eigenaardigheid:** het systeem geeft nooit echte Bluetooth-adressen —
+het levert een UUID in plaats van een MAC. Op een Mac wordt de printer dus via
+scannen gevonden, en `--address` verwacht een UUID, geen MAC.
+
+**Het lettertype** wordt automatisch gevonden: DejaVu/Noto/Liberation op Linux,
+Arial/Segoe UI op Windows, Arial/Helvetica op macOS. Stel `NIIMBOT_FONT` in voor
+een eigen lettertype.
+
 ## Verwante projecten
 
 Staat er geen Linux-machine naast de printer, dan zijn er andere wegen:

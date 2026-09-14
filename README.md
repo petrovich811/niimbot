@@ -349,6 +349,26 @@ go test ./...
 - печать на других типах этикеток (`--label`), кроме `withgaps`;
 - другие модели NIIMBOT (нужны свои параметры головки).
 
+## Сборка под другие системы
+
+Драйвер написан на Go, поэтому собирается под Linux, Windows и macOS:
+
+```bash
+go build -o niimbot .                                  # своя система
+GOOS=windows GOARCH=amd64 go build -o niimbot.exe .    # Windows, из Linux тоже
+GOOS=darwin  GOARCH=arm64 go build -o niimbot-mac .    # macOS — ТОЛЬКО на Mac
+```
+
+| Система | Состояние |
+|---|---|
+| **Linux** | работает, проверено на живом принтере |
+| **Windows** | собирается из Linux без правок; на живом принтере пока не проверялось |
+| **macOS** | **собирать нужно на Mac**: там Bluetooth — это CoreBluetooth, а её привязка требует CGO и фреймворков Apple. Кросс-сборка из Linux невозможна |
+
+**Особенность macOS:** система не отдаёт настоящие Bluetooth-адреса — вместо MAC выдаёт UUID. Поэтому на Mac принтер ищется сканированием, а `--address` принимает UUID, а не MAC.
+
+**Шрифт** ищется сам: DejaVu/Noto/Liberation в Linux, Arial/Segoe UI в Windows, Arial/Helvetica в macOS. Свой можно задать переменной `NIIMBOT_FONT`.
+
 ## Смежные проекты
 
 Если Linux рядом с принтером нет, есть и другие пути:

@@ -325,6 +325,28 @@ go test ./...
 - 在 `withgaps` 以外的标签类型上打印；
 - 其他 NIIMBOT 型号（需要各自的打印头参数）。
 
+## 在其他系统上编译
+
+驱动用 Go 编写，因此可以为 Linux、Windows 和 macOS 编译：
+
+```bash
+go build -o niimbot .                                  # 本机系统
+GOOS=windows GOARCH=amd64 go build -o niimbot.exe .    # Windows，在 Linux 上也能编
+GOOS=darwin  GOARCH=arm64 go build -o niimbot-mac .    # macOS —— 只能在 Mac 上编
+```
+
+| 系统 | 状态 |
+|---|---|
+| **Linux** | 可用，已在真机上验证 |
+| **Windows** | 在 Linux 上可直接交叉编译；尚未在真机上试过 |
+| **macOS** | **必须在 Mac 上编译**：那里的蓝牙是 CoreBluetooth，其绑定需要 CGO 和 Apple 框架，无法从 Linux 交叉编译 |
+
+**macOS 的特点：** 系统不会提供真实的蓝牙地址 —— 它给出的是 UUID 而不是 MAC。
+因此在 Mac 上打印机靠扫描找到，`--address` 接受的是 UUID，不是 MAC。
+
+**字体**会自动查找：Linux 上是 DejaVu/Noto/Liberation，Windows 上是
+Arial/Segoe UI，macOS 上是 Arial/Helvetica。可以用 `NIIMBOT_FONT` 指定自己的字体。
+
 ## 相关项目
 
 如果打印机旁边没有 Linux 机器，还有别的路子：
