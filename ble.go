@@ -65,10 +65,16 @@ func (p *Printer) log(format string, args ...any) {
 
 // ConnectMAC подключается по MAC-адресу.
 //
-// Перед подключением обязательно сканируем: BlueZ должен «увидеть»
-// устройство, иначе он отвечает ошибкой D-Bus
-// («Method "Get" … doesn't exist») — проверено.
-func ConnectMAC(mac string, verbose bool) (*Printer, error) {
+// freshDiscovery — устройство только что найдено поиском (ScanPrinter).
+// В этом случае прогрев не нужен: BlueZ уже знает устройство, а ВТОРОЕ
+// сканирование подряд в одном процессе срывается — BlueZ не успевает
+// остановить первое, и подключение падает с «не найден в эфире».
+// Проверено на живом принтере: с явным --address (одно сканирование)
+// подключение проходит, а после поиска по имени (два подряд) — нет.
+//
+// Если адрес задан вручную, прогрев обязателен: без него BlueZ отвечает
+// ошибкой D-Bus («Method "Get" … doesn't exist») — тоже проверено.
+func ConnectMAC(mac string, verbose, freshDiscovery bool) (*Printer, error) {
 	addr, err := makeAddress(mac)
 	if err != nil {
 		return nil, fmt.Errorf("не разобрать адрес принтера %q: %w", mac, err)
@@ -79,8 +85,10 @@ func ConnectMAC(mac string, verbose bool) (*Printer, error) {
 	}
 	p := &Printer{verbose: verbose}
 
-	if err := p.warmUp(adapter, mac); err != nil {
-		return nil, err
+	if !freshDiscovery {
+		if err := p.warmUp(adapter, mac); err != nil {
+			return nil, err
+		}
 	}
 
 	p.log("Подключаюсь к %s …", mac)

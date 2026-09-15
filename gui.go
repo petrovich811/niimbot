@@ -151,14 +151,16 @@ func withPrinter(address string, fn func(*Printer) error) error {
 	bleMu.Lock()
 	defer bleMu.Unlock()
 
+	foundByName := false
 	if address == "" {
 		found, err := ScanPrinter("N1-", 12*time.Second, guiVerbose)
 		if err != nil {
 			return err
 		}
 		address = found
+		foundByName = true
 	}
-	p, err := ConnectMAC(address, guiVerbose)
+	p, err := ConnectMAC(address, guiVerbose, foundByName)
 	if err != nil {
 		return err
 	}

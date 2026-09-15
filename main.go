@@ -125,17 +125,20 @@ func main() {
 	}
 
 	mac := *addr
+	foundByName := false
 	if mac == "" {
 		found, err := ScanPrinter("N1-", 12*time.Second, *verbose)
 		if err == nil {
-			mac = found
+			mac, foundByName = found, true
 		} else {
 			mac = defaultMAC
 			fmt.Fprintf(os.Stderr, "поиск не удался (%v), пробую %s\n", err, mac)
 		}
 	}
 
-	p, err := ConnectMAC(mac, *verbose)
+	// После удачного поиска BlueZ уже знает принтер — прогрев не нужен
+	// (и вреден: два сканирования подряд в одном процессе срываются).
+	p, err := ConnectMAC(mac, *verbose, foundByName)
 	if err != nil {
 		fatal(err)
 	}
