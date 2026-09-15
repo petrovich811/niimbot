@@ -398,6 +398,10 @@ and the white canvas background.
   mirrored. Confirmed on paper after the two fixes described above;
 - **a series of several labels as one job** — three labels printed back to back,
   `print finished (page 3, 100%)`;
+- **column order** — on paper the lines follow exactly the order asked for
+  (`4, 1, 2, 5`), and a column left out never reaches the label;
+- **an empty column keeps an empty line** — every label in the series has the same
+  number of lines and the layout does not shift;
 - **a picture drawn at the label's own size is crisper** than the same picture
   shrunk from a large canvas. Compared on paper: 240×96 against 900×360 — the
   first is clearly better. So "draw at that size" is not fussiness, it follows

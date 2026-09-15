@@ -399,6 +399,10 @@ pakketten, de punttellers, de oriëntatie van regels en de witte achtergrond.
 - **tekst printen** — volledige cyclus: `pagina 1, printen 100%, doorvoer 100%`;
 - **een reeks van meerdere etiketten als één opdracht** — drie etiketten achter
   elkaar, `printen voltooid (pagina 3, 100%)`;
+- **kolomvolgorde** — op papier staan de regels precies in de gevraagde volgorde
+  (`4, 1, 2, 5`), en een weggelaten kolom komt niet op het etiket;
+- **een lege kolom houdt een lege regel** — elk etiket in de reeks heeft evenveel
+  regels en de opmaak verschuift niet;
 - **een afbeelding die op de maat van het etiket is getekend is scherper** dan
   dezelfde afbeelding verkleind uit een groot canvas. Vergeleken op papier:
   240×96 tegen 900×360 — de eerste is duidelijk beter. «Teken op die maat» is dus
