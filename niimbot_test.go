@@ -2,8 +2,11 @@ package main
 
 import (
 	"bytes"
+	"encoding/base64"
 	"image"
 	"image/color"
+	"image/draw"
+	"image/png"
 	"math"
 	"strings"
 	"testing"
@@ -552,5 +555,212 @@ func TestFlagNeedsValueMatchesRegistration(t *testing.T) {
 	// Неизвестный флаг значением не считается — иначе он съел бы команду.
 	if flagNeedsValue("такого-флага-нет") {
 		t.Error("неизвестный флаг не должен забирать значение")
+	}
+}
+
+// --- конструктор этикеток ---
+
+// Границы чернил по горизонтали: где начинается и кончается краска.
+func inkColumns(img *image.Gray) (int, int) {
+	minX, maxX := -1, -1
+	b := img.Bounds()
+	for x := 0; x < b.Dx(); x++ {
+		for y := 0; y < b.Dy(); y++ {
+			if img.GrayAt(x, y).Y < 128 {
+				if minX < 0 {
+					minX = x
+				}
+				maxX = x
+				break
+			}
+		}
+	}
+	return minX, maxX
+}
+
+func inkRows(img *image.Gray) (int, int) {
+	minY, maxY := -1, -1
+	b := img.Bounds()
+	for y := 0; y < b.Dy(); y++ {
+		for x := 0; x < b.Dx(); x++ {
+			if img.GrayAt(x, y).Y < 128 {
+				if minY < 0 {
+					minY = y
+				}
+				maxY = y
+				break
+			}
+		}
+	}
+	return minY, maxY
+}
+
+// Размер этикетки из шаблона: длина задаётся, высота всегда 96 точек.
+func TestRenderTemplateSize(t *testing.T) {
+	for _, mm := range []float64{20, 30, 50} {
+		img, err := RenderTemplate(LabelTemplate{LengthMM: mm}, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if img.Bounds().Dy() != printheadPixels {
+			t.Fatalf("%v мм: высота %d", mm, img.Bounds().Dy())
+		}
+		// Тот же пересчёт, что и в NewLabelImage: миллиметры в точки
+		// с округлением до ближайшей.
+		if want := int(mm*dotsPerMM + 0.5); img.Bounds().Dx() != want {
+			t.Fatalf("%v мм: ширина %d, ожидалось %d", mm, img.Bounds().Dx(), want)
+		}
+	}
+}
+
+// Координаты элемента: надпись ставится туда, куда её положили.
+func TestRenderTemplateTextPosition(t *testing.T) {
+	// 1 мм = 8 точек. Элемент в левом верхнем углу.
+	left, err := RenderTemplate(LabelTemplate{
+		LengthMM: 30,
+		Elements: []Element{{Kind: "text", X: 1, Y: 1, Text: "ЛОТ", FontMM: 3}},
+	}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	minX, _ := inkColumns(left)
+	if minX < 6 || minX > 14 {
+		t.Fatalf("надпись начинается на %d точке, ожидалось около 8 (1 мм)", minX)
+	}
+	minY, _ := inkRows(left)
+	if minY < 3 || minY > 14 {
+		t.Fatalf("надпись сверху на %d точке, ожидалось около 8 (1 мм)", minY)
+	}
+
+	// Тот же элемент, сдвинутый вправо на 20 мм, должен оказаться справа.
+	right, err := RenderTemplate(LabelTemplate{
+		LengthMM: 30,
+		Elements: []Element{{Kind: "text", X: 20, Y: 1, Text: "ЛОТ", FontMM: 3}},
+	}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	minXr, _ := inkColumns(right)
+	if minXr < 155 {
+		t.Fatalf("сдвинутая надпись начинается на %d точке, ожидалось около 160 (20 мм)", minXr)
+	}
+}
+
+// Выравнивание внутри рамки элемента.
+func TestRenderTemplateAlign(t *testing.T) {
+	render := func(align string) (int, int) {
+		img, err := RenderTemplate(LabelTemplate{
+			LengthMM: 30,
+			Elements: []Element{{
+				Kind: "text", X: 0, Y: 1, W: 30, Text: "ЦЕНТР", FontMM: 3, Align: align,
+			}},
+		}, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return inkColumns(img)
+	}
+
+	lMin, lMax := render("left")
+	cMin, cMax := render("center")
+	rMin, rMax := render("right")
+
+	if !(lMin < cMin && cMin < rMin) {
+		t.Fatalf("порядок выравнивания нарушен: left %d, center %d, right %d", lMin, cMin, rMin)
+	}
+	// Все три варианта — одна и та же надпись, ширина должна совпасть.
+	if lMax-lMin != cMax-cMin || cMax-cMin != rMax-rMin {
+		t.Fatalf("ширина надписи зависит от выравнивания: %d, %d, %d",
+			lMax-lMin, cMax-cMin, rMax-rMin)
+	}
+	// Прижатая вправо должна упираться в правый край рамки.
+	if rMax < 230 {
+		t.Fatalf("выравнивание вправо не дошло до края: %d", rMax)
+	}
+}
+
+// Подстановка столбцов и ошибка на недостающий столбец.
+func TestRenderTemplateFields(t *testing.T) {
+	img, err := RenderTemplate(LabelTemplate{
+		LengthMM: 30,
+		Elements: []Element{{Kind: "text", X: 1, Y: 1, Text: "{1}", FontMM: 3}},
+	}, []string{"УТРЕХТ"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if minX, _ := inkColumns(img); minX < 0 {
+		t.Fatal("подставленное поле не напечаталось")
+	}
+
+	_, err = RenderTemplate(LabelTemplate{
+		LengthMM: 30,
+		Elements: []Element{{Kind: "text", X: 1, Y: 1, Text: "{3}", FontMM: 3}},
+	}, []string{"один", "два"})
+	if err == nil {
+		t.Fatal("ожидалась ошибка про недостающий столбец")
+	}
+	if !strings.Contains(err.Error(), "{3}") {
+		t.Fatalf("в ошибке нет имени столбца: %v", err)
+	}
+}
+
+// Пустая подстановка не должна ничего рисовать и не должна падать.
+func TestRenderTemplateEmptyField(t *testing.T) {
+	img, err := RenderTemplate(LabelTemplate{
+		LengthMM: 30,
+		Elements: []Element{{Kind: "text", X: 1, Y: 1, Text: "{1}", FontMM: 3}},
+	}, []string{"   "})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if minX, _ := inkColumns(img); minX >= 0 {
+		t.Fatal("пустое поле что-то напечатало")
+	}
+}
+
+// Картинка из data:URL встаёт в свою рамку.
+func TestRenderTemplateImage(t *testing.T) {
+	// Чёрный квадрат 10×10 в base64 (PNG).
+	var buf bytes.Buffer
+	sq := image.NewGray(image.Rect(0, 0, 10, 10))
+	draw.Draw(sq, sq.Bounds(), image.NewUniform(color.Black), image.Point{}, draw.Src)
+	if err := png.Encode(&buf, sq); err != nil {
+		t.Fatal(err)
+	}
+	url := "data:image/png;base64," + base64.StdEncoding.EncodeToString(buf.Bytes())
+
+	img, err := RenderTemplate(LabelTemplate{
+		LengthMM: 30,
+		Elements: []Element{{Kind: "image", X: 2, Y: 2, W: 8, H: 8, Image: url}},
+	}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	minX, maxX := inkColumns(img)
+	minY, maxY := inkRows(img)
+	// 2 мм = 16 точек, 8 мм = 64 точки.
+	if minX < 14 || minX > 18 {
+		t.Fatalf("картинка начинается на %d, ожидалось около 16 (2 мм)", minX)
+	}
+	if maxX < 76 || maxX > 80 {
+		t.Fatalf("картинка кончается на %d, ожидалось около 79 (2+8 мм)", maxX)
+	}
+	if minY < 14 || maxY > 80 {
+		t.Fatalf("картинка по высоте: %d..%d, ожидалось около 16..79", minY, maxY)
+	}
+}
+
+// Ошибки в описании элементов должны быть понятными, а не молчаливыми.
+func TestRenderTemplateBadElements(t *testing.T) {
+	cases := []LabelTemplate{
+		{LengthMM: 30, Elements: []Element{{Kind: "рамочка", X: 1, Y: 1}}},
+		{LengthMM: 30, Elements: []Element{{X: 1, Y: 1}}},
+		{LengthMM: 30, Elements: []Element{{Kind: "image", X: 1, Y: 1, W: 5, H: 5}}},
+		{LengthMM: 30, Elements: []Element{{Kind: "image", X: 1, Y: 1, Image: "data:image/png;base64,zzz", W: 5, H: 5}}},
+	}
+	for i, tpl := range cases {
+		if _, err := RenderTemplate(tpl, nil); err == nil {
+			t.Fatalf("случай %d: ожидалась ошибка", i+1)
+		}
 	}
 }

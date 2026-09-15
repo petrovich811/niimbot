@@ -9,6 +9,7 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
+	"image"
 	"image/png"
 	"io/fs"
 	"net/http"
@@ -207,15 +208,16 @@ func apiStatus(address string) (map[string]any, error) {
 
 // printRequest — тело запросов на печать.
 type printRequest struct {
-	Items    []string `json:"items"`    // строки данных: одна запись на этикетку
-	Template string   `json:"template"` // шаблон этикетки с {1}, {2}… (необязательно)
-	Length   float64  `json:"length"`
-	Font     float64  `json:"font"`
-	Density  int      `json:"density"`
-	Label    string   `json:"label"`
-	Copies   int      `json:"copies"`
-	Flip     bool     `json:"flip"`
-	Address  string   `json:"address"`
+	Items    []string  `json:"items"`    // строки данных: одна запись на этикетку
+	Template string    `json:"template"` // шаблон этикетки с {1}, {2}… (необязательно)
+	Elements []Element `json:"elements"` // шаблон из конструктора (важнее Template)
+	Length   float64   `json:"length"`
+	Font     float64   `json:"font"`
+	Density  int       `json:"density"`
+	Label    string    `json:"label"`
+	Copies   int       `json:"copies"`
+	Flip     bool      `json:"flip"`
+	Address  string    `json:"address"`
 }
 
 // splitFields разбирает строку данных на столбцы: ; , или табуляция.
@@ -320,27 +322,44 @@ func renderPages(req printRequest) ([][]Row, error) {
 	}
 	var pages [][]Row
 	for _, item := range req.Items {
-		var lines []string
-		if strings.TrimSpace(req.Template) != "" {
-			var err error
-			lines, err = expandTemplate(req.Template, splitFields(item))
-			if err != nil {
-				return nil, fmt.Errorf("строка данных %q: %w", item, err)
-			}
-		} else {
-			lines = splitLabel(item)
-		}
-		if len(lines) == 0 {
-			continue
-		}
-		img, err := RenderText(lines, length, req.Font)
+		img, err := renderOne(req, item, length)
 		if err != nil {
 			return nil, err
 		}
-		rows := ImageToRows(img, req.Flip)
-		pages = append(pages, rows)
+		if img == nil {
+			continue
+		}
+		pages = append(pages, ImageToRows(img, req.Flip))
 	}
 	return pages, nil
+}
+
+// renderOne готовит одну этикетку: по шаблону конструктора, если он задан,
+// иначе прежним способом — текстом с шаблоном или строкой через |.
+func renderOne(req printRequest, item string, length float64) (*image.Gray, error) {
+	if len(req.Elements) > 0 {
+		img, err := RenderTemplate(LabelTemplate{LengthMM: length, Elements: req.Elements},
+			splitFields(item))
+		if err != nil {
+			return nil, fmt.Errorf("этикетка %q: %w", item, err)
+		}
+		return img, nil
+	}
+
+	var lines []string
+	if strings.TrimSpace(req.Template) != "" {
+		var err error
+		lines, err = expandTemplate(req.Template, splitFields(item))
+		if err != nil {
+			return nil, fmt.Errorf("строка данных %q: %w", item, err)
+		}
+	} else {
+		lines = splitLabel(item)
+	}
+	if len(lines) == 0 {
+		return nil, nil
+	}
+	return RenderText(lines, length, req.Font)
 }
 
 // apiPrint запускает серию в фоне и возвращает идентификатор задания.
@@ -403,26 +422,17 @@ func apiPreview(w http.ResponseWriter, req printRequest) {
 	if length <= 0 {
 		length = 30
 	}
-	lines := []string{"пусто"}
+	item := "пусто"
 	if len(req.Items) > 0 {
-		var l []string
-		if strings.TrimSpace(req.Template) != "" {
-			var err error
-			l, err = expandTemplate(req.Template, splitFields(req.Items[0]))
-			if err != nil {
-				writeErr(w, http.StatusBadRequest, err)
-				return
-			}
-		} else {
-			l = splitLabel(req.Items[0])
-		}
-		if len(l) > 0 {
-			lines = l
-		}
+		item = req.Items[0]
 	}
-	img, err := RenderText(lines, length, req.Font)
+	img, err := renderOne(req, item, length)
 	if err != nil {
 		writeErr(w, http.StatusBadRequest, err)
+		return
+	}
+	if img == nil {
+		writeErr(w, http.StatusBadRequest, fmt.Errorf("нечего рисовать"))
 		return
 	}
 	w.Header().Set("Content-Type", "image/png")

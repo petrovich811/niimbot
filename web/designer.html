@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Конструктор этикеток — NIIMBOT N1</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="designer.css">
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="dot"></span>
+    <h1>Конструктор этикеток</h1>
+  </div>
+  <a href="/" class="back">← обычная печать</a>
+  <div id="status" class="status">читаю состояние…</div>
+</header>
+
+<main class="designer">
+
+  <!-- ЛЕВО: холст -->
+  <section class="panel">
+    <div class="row toolbar">
+      <button id="add-text" class="ghost">+ Надпись</button>
+      <button id="add-image" class="ghost">+ Картинка</button>
+      <input type="file" id="image-file" accept="image/*" hidden>
+      <button id="del-el" class="ghost danger">Удалить</button>
+      <label class="check"><input type="checkbox" id="grid" checked> сетка 1 мм</label>
+      <span class="spacer"></span>
+      <label class="inline">Длина, мм
+        <input type="number" id="length" value="30" min="5" max="120" step="1">
+      </label>
+    </div>
+
+    <div id="stage">
+      <div id="label">
+        <div class="grid-lines"></div>
+      </div>
+      <div class="ruler-x"></div>
+    </div>
+    <p class="hint">Тяните элемент мышью — координаты прилипают к сетке 0,5 мм.
+      <code>{1}</code>, <code>{2}</code>… — столбцы строки данных.</p>
+
+    <h2>Что уйдёт на печать</h2>
+    <div class="real-preview">
+      <img id="preview" alt="макет">
+      <div id="preview-empty" class="preview-empty">нажмите «Обновить макет»</div>
+    </div>
+    <div class="row">
+      <button id="refresh-preview" class="ghost">Обновить макет</button>
+      <label class="inline">Данные для макета
+        <input type="text" id="sample" value="Утрехт;2 гульдена 1785;XF;лот 130;420 EUR">
+      </label>
+    </div>
+  </section>
+
+  <!-- ПРАВО: свойства -->
+  <aside class="panel">
+    <h2>Элемент</h2>
+    <div id="no-selection" class="hint">Ничего не выбрано — нажмите на элемент на холсте.</div>
+
+    <div id="props" class="hidden">
+      <div class="grid">
+        <label>X, мм <input type="number" id="p-x" step="0.5" min="0"></label>
+        <label>Y, мм <input type="number" id="p-y" step="0.5" min="0"></label>
+        <label id="w-wrap">Ширина, мм <input type="number" id="p-w" step="0.5" min="0"></label>
+        <label id="h-wrap">Высота, мм <input type="number" id="p-h" step="0.5" min="0"></label>
+      </div>
+      <div id="text-props">
+        <label>Текст <input type="text" id="p-text"></label>
+        <div class="grid">
+          <label>Кегль, мм <input type="number" id="p-font" step="0.5" min="1" max="12"></label>
+          <label>Выравнивание
+            <select id="p-align">
+              <option value="left">по левому краю</option>
+              <option value="center">по центру</option>
+              <option value="right">по правому краю</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div id="image-props">
+        <label>Картинка <input type="file" id="p-image-file" accept="image/*"></label>
+        <p class="hint">Картинка встраивается в шаблон, поэтому он остаётся одним файлом.</p>
+      </div>
+    </div>
+
+    <h2>Шаблон</h2>
+    <div class="row">
+      <select id="templates"><option value="">— выберите —</option></select>
+    </div>
+    <div class="row">
+      <button id="tpl-save" class="ghost">Сохранить</button>
+      <button id="tpl-del" class="ghost danger">Удалить</button>
+      <button id="tpl-new" class="ghost">Новый</button>
+    </div>
+
+    <h2>Печать</h2>
+    <div class="grid">
+      <label>Плотность
+        <select id="density"><option>1</option><option selected>2</option><option>3</option></select>
+      </label>
+      <label>Копий каждой <input type="number" id="copies" value="1" min="1" max="99"></label>
+      <label>Тип этикетки
+        <select id="label">
+          <option value="">авто (по метке)</option>
+          <option value="withgaps">с зазорами</option>
+          <option value="continuous">непрерывная лента</option>
+          <option value="transparent">прозрачные</option>
+          <option value="blackmarkgap">с чёрной меткой</option>
+          <option value="heatshrink">термоусадочная трубка</option>
+        </select>
+      </label>
+      <label class="check"><input type="checkbox" id="flip"> Перевернуть на 180°</label>
+    </div>
+  </aside>
+
+  <!-- НИЗ: данные и печать серии -->
+  <section class="panel data-panel">
+    <h2>Список этикеток — по одной записи в строке</h2>
+    <textarea id="series-text" rows="6"></textarea>
+    <div class="row">
+      <button id="csv-btn" class="ghost">Загрузить CSV</button>
+      <input type="file" id="csv-file" accept=".csv,.txt" hidden>
+      <label class="check"><input type="checkbox" id="csv-header" checked> первая строка — заголовки</label>
+      <span id="series-count" class="hint">0 этикеток</span>
+      <span class="spacer"></span>
+      <button id="print-btn" class="primary">Напечатать серию</button>
+    </div>
+    <p class="hint">Столбцы разделяйте <code>;</code> — они подставляются в надписи как
+      <code>{1}</code>, <code>{2}</code>… Excel сохраните как CSV.</p>
+
+    <div id="progress" class="progress hidden">
+      <div class="bar"><div id="bar-fill"></div></div>
+      <p id="progress-text"></p>
+    </div>
+  </section>
+
+</main>
+
+<script src="designer.js"></script>
+</body>
+</html>

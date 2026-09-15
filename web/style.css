@@ -103,7 +103,7 @@ label {
   color: var(--ink-soft);
   margin-bottom: 12px;
 }
-input[type=number], select, textarea {
+input[type=number], input[type=text], select, textarea {
   display: block;
   width: 100%;
   margin-top: 5px;
@@ -219,3 +219,16 @@ button:disabled { opacity: .45; cursor: default; }
   transition: width .25s ease;
 }
 #progress-text { font-size: 13px; color: var(--ink-soft); margin-top: 8px; }
+
+/* ссылка на конструктор в шапке */
+.design-link {
+  color: #fff;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 9px 16px;
+  border: 1px solid rgba(255,255,255,.35);
+  border-radius: 9px;
+  white-space: nowrap;
+}
+.design-link:hover { background: rgba(255,255,255,.12); }

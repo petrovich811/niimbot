@@ -1,0 +1,130 @@
+/* Конструктор этикеток: холст, сетка, элементы */
+
+main.designer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-areas:
+    "canvas props"
+    "data   data";
+  gap: 20px;
+  align-items: start;
+}
+main.designer > section.panel:first-of-type { grid-area: canvas; }
+main.designer > aside.panel { grid-area: props; }
+main.designer > .data-panel { grid-area: data; }
+@media (max-width: 1100px) {
+  main.designer { grid-template-columns: 1fr; grid-template-areas: "canvas" "props" "data"; }
+}
+
+.back {
+  color: rgba(255,255,255,.85);
+  text-decoration: none;
+  font-size: 14px;
+  border-bottom: 1px dashed rgba(255,255,255,.4);
+}
+.back:hover { color: #fff; }
+
+.toolbar { margin-bottom: 14px; }
+.spacer { flex: 1; }
+label.inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 0;
+  font-size: 13px;
+  white-space: nowrap;
+}
+label.inline input { width: 84px; margin-top: 0; }
+
+/* ===== холст ===== */
+#stage {
+  position: relative;
+  overflow-x: auto;
+  padding: 26px 0 10px 30px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+#label {
+  position: relative;
+  background: #fff;
+  border: 2px solid var(--green-dark);
+  border-radius: 3px;
+  box-shadow: 0 3px 14px rgba(0,35,25,.12);
+  cursor: default;
+  user-select: none;
+}
+#label.no-grid .grid-lines { display: none; }
+
+.grid-lines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  /* сетка 1 мм: шаг задаётся из JS через --mm */
+  background-image:
+    linear-gradient(to right, rgba(17,141,106,.18) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(17,141,106,.18) 1px, transparent 1px),
+    linear-gradient(to right, rgba(17,141,106,.42) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(17,141,106,.42) 1px, transparent 1px);
+  background-size:
+    var(--mm) var(--mm),
+    var(--mm) var(--mm),
+    calc(var(--mm) * 5) calc(var(--mm) * 5),
+    calc(var(--mm) * 5) calc(var(--mm) * 5);
+}
+
+/* линейка сверху */
+.ruler-x {
+  position: absolute;
+  top: 4px;
+  left: 30px;
+  height: 18px;
+  pointer-events: none;
+  font-size: 10px;
+  color: var(--ink-soft);
+}
+
+/* ===== элементы ===== */
+.el {
+  position: absolute;
+  border: 1.5px dashed rgba(17,141,106,.55);
+  border-radius: 3px;
+  cursor: move;
+  overflow: hidden;
+  white-space: pre;
+  color: #111;
+  background: rgba(17,141,106,.06);
+}
+.el.selected {
+  border-style: solid;
+  border-color: var(--green);
+  box-shadow: 0 0 0 2px rgba(17,141,106,.25);
+  background: rgba(17,141,106,.12);
+}
+.el img { width: 100%; height: 100%; object-fit: fill; pointer-events: none; }
+.el .ph { color: #B3392F; font-size: 10px; padding: 2px; }
+
+/* ===== настоящий макет ===== */
+.real-preview {
+  background: var(--bg);
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 110px;
+  margin-bottom: 12px;
+}
+.real-preview img {
+  display: none;
+  max-width: 100%;
+  image-rendering: pixelated;
+  background: #fff;
+  box-shadow: 0 2px 12px rgba(0,35,25,.12);
+}
+.real-preview img.ready { display: block; }
+.real-preview img.ready + .preview-empty { display: none; }
+
+.data-panel textarea { min-height: 90px; }
