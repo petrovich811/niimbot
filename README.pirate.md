@@ -175,6 +175,54 @@ column ye leave out (the third here) never reaches the label, an' the same colum
 may be listed twice. The «Label template» field fills herself in — `{4}`, `{1}`,
 `{2}`, `{5}` — an' ye can add to her after, e.g. `TAG {2}`.
 
+## The Label Draughtsman
+
+Open her from the **«Label designer»** link in the window's header, or straight:
+`http://127.0.0.1:8765/designer.html`.
+
+A label be built from **elements** — words an' pictures, each with her own
+coordinates in millimetres. The coordinates follow the readin' orientation:
+
+- **X** — along the label (the feed), 0 on the left;
+- **Y** — across the label (the printhead), 0 on top, 12 mm in all.
+
+| What ye can do | How |
+|---|---|
+| Move elements | drag 'em; coordinates snap to 0.5 mm |
+| Set exact numbers | the X, Y, width an' height fields on the right |
+| Words | text with `{1}`, `{2}`… fields, size in mm, left/centre/right |
+| A picture | «+ Picture»: the file be stowed into the template |
+| See the result | the «Refresh the mock-up» button — a true print sits beside the canvas |
+| Print a fleet | a list o' labels (pasted or from CSV) an' «Print the fleet» |
+| Save her | «Save» in the «Template» berth |
+
+**The template stays one single file**: pictures be stowed as `data:URL`, so ye can
+carry her to another ship whole.
+
+The canvas be ruled in millimetres: thin lines be 1 mm, bold ones 5 mm, with a ruler
+aloft. The «1 mm grid» box hides the rulin'.
+
+Mind that **1 mm be 8 dots**. A 14×30 label holds but 240×96 dots, so four lines
+bigger than 2.5 mm will not fit aboard.
+
+### A template as cargo
+
+Fer them workin' through the API, a template reads plain without the draughtsman:
+
+```json
+{
+  "length": 30,
+  "elements": [
+    {"kind": "text", "x": 1, "y": 0.5, "w": 13, "text": "lot {4}", "font": 2.2, "align": "left"},
+    {"kind": "text", "x": 16, "y": 0.5, "w": 13, "text": "{5}", "font": 2.2, "align": "right"},
+    {"kind": "text", "x": 1, "y": 3.2, "w": 28, "text": "{1}", "font": 2.6},
+    {"kind": "image", "x": 20, "y": 3, "w": 8, "h": 8, "image": "data:image/png;base64,…"}
+  ]
+}
+```
+
+`/api/preview` an' `/api/print` take the same list in the `elements` field.
+
 ## Labels with a Picture
 
 ```bash

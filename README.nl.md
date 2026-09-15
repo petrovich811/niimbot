@@ -173,6 +173,54 @@ kolom die je weglaat (hier de derde) komt niet op het etiket, en dezelfde kolom 
 twee keer voorkomen. Het veld «Etikeksjabloon» vult zichzelf: `{4}`, `{1}`, `{2}`,
 `{5}` — en dat kun je daarna aanvullen, bijvoorbeeld `TAG {2}`.
 
+## Etiketontwerper
+
+Open hem via de link **«Etiketontwerper»** in de kop van de interface, of direct:
+`http://127.0.0.1:8765/designer.html`.
+
+Een etiket wordt opgebouwd uit **elementen** — tekst en afbeeldingen, elk met eigen
+coördinaten in millimeters. De coördinaten volgen de leesrichting:
+
+- **X** — langs het etiket (de doorvoer), 0 links;
+- **Y** — dwars op het etiket (de printkop), 0 boven, samen 12 mm.
+
+| Wat kan | Hoe |
+|---|---|
+| Elementen verplaatsen | sleep ze; coördinaten klikken vast op 0,5 mm |
+| Exact instellen | de velden X, Y, breedte en hoogte rechts |
+| Tekst | tekst met velden `{1}`, `{2}`…, grootte in mm, links/midden/rechts |
+| Een afbeelding | «+ Afbeelding»: het bestand wordt in het sjabloon ingebed |
+| Resultaat zien | «Proefontwerp verversen» — naast het doek staat een echte afdruk |
+| Een reeks printen | een lijst etiketten (geplakt of uit CSV) en «Reeks printen» |
+| Bewaren | «Bewaren» in het vak «Sjabloon» |
+
+**Het sjabloon blijft één bestand**: afbeeldingen worden als `data:URL` ingebed, dus
+het is in één stuk naar een andere computer te dragen.
+
+Het doek is in millimeters verdeeld: dunne lijnen 1 mm, dikke 5 mm, met een liniaal
+boven. Het vakje «1 mm-raster» verbergt de verdeling.
+
+Onthoud dat **1 mm 8 punten is**. Een etiket van 14×30 houdt maar 240×96 punten over,
+dus vier regels groter dan 2,5 mm passen er niet op.
+
+### Het sjabloon als gegevens
+
+Voor wie via de API werkt, is een sjabloon ook zonder ontwerper leesbaar:
+
+```json
+{
+  "length": 30,
+  "elements": [
+    {"kind": "text", "x": 1, "y": 0.5, "w": 13, "text": "lot {4}", "font": 2.2, "align": "left"},
+    {"kind": "text", "x": 16, "y": 0.5, "w": 13, "text": "{5}", "font": 2.2, "align": "right"},
+    {"kind": "text", "x": 1, "y": 3.2, "w": 28, "text": "{1}", "font": 2.6},
+    {"kind": "image", "x": 20, "y": 3, "w": 8, "h": 8, "image": "data:image/png;base64,…"}
+  ]
+}
+```
+
+`/api/preview` en `/api/print` nemen dezelfde lijst aan in het veld `elements`.
+
 ## Etiketten met een afbeelding
 
 ```bash
