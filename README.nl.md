@@ -397,6 +397,12 @@ pakketten, de punttellers, de oriëntatie van regels en de witte achtergrond.
 - zoeken, verbinden en handshake;
 - model-id `3586`, serienummer, firmware `3.13`, accu;
 - **tekst printen** — volledige cyclus: `pagina 1, printen 100%, doorvoer 100%`;
+- **een reeks van meerdere etiketten als één opdracht** — drie etiketten achter
+  elkaar, `printen voltooid (pagina 3, 100%)`;
+- **een afbeelding die op de maat van het etiket is getekend is scherper** dan
+  dezelfde afbeelding verkleind uit een groot canvas. Vergeleken op papier:
+  240×96 tegen 900×360 — de eerste is duidelijk beter. «Teken op die maat» is dus
+  geen gril, het volgt uit 203 dpi;
 - **afbeelding printen** — kader, tekst en hoekmarkering kwamen er net zo uit als
   in het proefontwerp;
 - **oriëntatie** — de afdruk is goed leesbaar: tekst langs het etiket, niet

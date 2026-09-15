@@ -396,6 +396,12 @@ way rows lie an' the white canvas behind 'em.
 - huntin', boardin' an' the handshake;
 - model id `3586`, serial number, firmware `3.13`, battery;
 - **printin' text** — the whole voyage: `page 1, print 100%, feed 100%`;
+- **a fleet o' several labels as one job** — three labels back to back,
+  `printin' done (page 3, 100%)`;
+- **a picture drawn at the label's own size be crisper** than the same picture
+  shrunk from a great canvas. Compared on paper: 240×96 against 900×360 — the
+  first be plainly better. So «draw at that size» be no fussiness, it follows
+  from 203 dpi;
 - **printin' a picture** — frame, words an' corner mark landed just as the mock-up said;
 - **which way up** — the printout reads true: words along the label, not mirrored.
   Confirmed on paper after the two repairs told above;

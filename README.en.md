@@ -396,8 +396,14 @@ and the white canvas background.
   in the preview;
 - **orientation** — the printout reads correctly: text along the label, not
   mirrored. Confirmed on paper after the two fixes described above;
-- both orientation bugs showed up only on paper — there is no other way to
-  catch them.
+- **a series of several labels as one job** — three labels printed back to back,
+  `print finished (page 3, 100%)`;
+- **a picture drawn at the label's own size is crisper** than the same picture
+  shrunk from a large canvas. Compared on paper: 240×96 against 900×360 — the
+  first is clearly better. So "draw at that size" is not fussiness, it follows
+  from 203 dpi;
+- the orientation and connection bugs surfaced only on real hardware: neither the
+  tests nor the mock-up showed them.
 
 **Not verified yet:**
 
