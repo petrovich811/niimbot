@@ -24,6 +24,7 @@ $ niimbot text "1 gulden" "1734"
 | `niimbot text "line" "..."` | print text (each argument is a separate line) |
 | `niimbot image file.png` | print an image |
 | `niimbot preview "line"` | render the label **without printing** |
+| `niimbot preview --file img.png` | mock-up from a picture: what survives fitting and thresholding |
 | `niimbot testpage` | built-in printer test page (connection check) |
 | `niimbot gui` | browser UI: **label series**, templates, live preview |
 | `niimbot scan` | discover the printer over Bluetooth |
@@ -169,6 +170,51 @@ That means: the label's first line is column 4, the second is 1, then 2 and 5. A
 column you leave out (the third here) never reaches the label, and the same column
 may be listed twice. The template field fills itself in — `{4}`, `{1}`, `{2}`, `{5}` —
 and you can then add to it, e.g. `TAG {2}`.
+
+## Labels with a picture
+
+```bash
+# see what would print, without wasting a label
+./niimbot preview --file sketch.png
+
+# print it
+./niimbot image sketch.png
+```
+
+Formats: **PNG, JPEG, GIF**. An image of any size is **fitted** into the label area
+whole, keeping its proportions, and centred on a white field — there is no need to
+match pixels by hand.
+
+### Draw at the label's own size
+
+The printer runs at **203 dpi**, which is **8 dots per millimetre**. The label area:
+
+| Label | Image size |
+|---|---|
+| 14×30 mm | **240×96** dots |
+| 14×40 mm | 320×96 |
+| 14×50 mm | 400×96 |
+
+The height is always **96** dots — that is the printhead's width (12 mm) — and the
+width is the label length in millimetres times 8.
+
+**Fitting works, but drawing at that size is better.** Draw 900×360 and the text
+shrinks almost fourfold and turns woolly: the label's resolution is only 240×96,
+and there is no headroom.
+
+### What to draw in
+
+| Program | When it suits |
+|---|---|
+| **Inkscape** | best for labels: a 240×96 pixel document, shapes and text, export to PNG |
+| **GIMP** | when you need a photograph: scale to 8 pixels per millimetre, greyscale |
+| **LibreOffice Draw** | when an office editor feels more familiar and simple shapes suffice |
+| **ImageMagick** | from the command line: `convert source.png -resize 240x96! label.png` |
+| anything else | one thing matters: a PNG of the right size |
+
+Printing is **black and white**: grey becomes black or white by a threshold, so
+halftones and thin lines vanish. Check with `preview --file` — it shows exactly what
+the printer will get.
 
 ## Labels and orientation
 

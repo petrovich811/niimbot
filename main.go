@@ -26,11 +26,27 @@ import (
 
 const defaultMAC = "24:0A:11:D9:EC:C3" // N1-GA24110447
 
-// Известные флаги с указанием, принимают ли они значение.
-var flagSpec = map[string]bool{
-	"address": true, "v": true, "length": true, "font": true, "flip": false,
-	"density": true, "label": true, "copies": true, "no-wait": false,
-}
+// Все флаги объявлены один раз на общем наборе: так разбор аргументов
+// может спросить у самих флагов, принимает ли флаг значение.
+//
+// Раньше здесь был отдельный список имён, и каждый новый флаг легко было
+// забыть в него добавить — тогда «--port 9000» разбирался как булев флаг,
+// а 9000 попадал в позиционные аргументы.
+var flagSet = flag.NewFlagSet("niimbot", flag.ExitOnError)
+
+var (
+	addr      = flagSet.String("address", "", "MAC принтера (по умолчанию — поиск по имени N1-)")
+	verbose   = flagSet.Bool("v", true, "подробный вывод")
+	length    = flagSet.Float64("length", 30.0, "длина этикетки, мм")
+	fontPt    = flagSet.Float64("font", 0, "кегль в точках (0 = подобрать автоматически)")
+	flip      = flagSet.Bool("flip", false, "перевернуть содержимое на 180°")
+	density   = flagSet.Int("density", 2, "плотность 1..3")
+	label     = flagSet.String("label", "", "тип этикетки; пусто — определить по метке рулона")
+	copies    = flagSet.Int("copies", 1, "количество копий")
+	imageFile = flagSet.String("file", "", "файл картинки для макета (команда preview)")
+	port      = flagSet.Int("port", 8765, "порт веб-интерфейса (команда gui); 8080 занят SearXNG")
+	noBrowser = flagSet.Bool("no-browser", false, "не открывать браузер (команда gui)")
+)
 
 func main() {
 	if len(os.Args) < 2 {
@@ -48,18 +64,7 @@ func main() {
 	cmd := posArgs[0]
 	posArgs = posArgs[1:]
 
-	fs := flag.NewFlagSet(cmd, flag.ExitOnError)
-	addr := fs.String("address", "", "MAC принтера (по умолчанию — поиск по имени N1-)")
-	verbose := fs.Bool("v", true, "подробный вывод")
-	length := fs.Float64("length", 30.0, "длина этикетки, мм")
-	fontPt := fs.Float64("font", 0, "кегль в точках (0 = подобрать автоматически)")
-	flip := fs.Bool("flip", false, "перевернуть содержимое на 180°")
-	density := fs.Int("density", 2, "плотность 1..3")
-	label := fs.String("label", "", "тип этикетки; пусто — определить по метке рулона")
-	copies := fs.Int("copies", 1, "количество копий")
-	port := fs.Int("port", 8765, "порт веб-интерфейса (команда gui); 8080 занят SearXNG")
-	noBrowser := fs.Bool("no-browser", false, "не открывать браузер (команда gui)")
-	if err := fs.Parse(flagArgs); err != nil {
+	if err := flagSet.Parse(flagArgs); err != nil {
 		fatal(err)
 	}
 
@@ -85,6 +90,16 @@ func main() {
 		}
 		return
 	case "preview":
+		// Макет из картинки: показывает, что останется после вписывания
+		// в область этикетки и порога «чёрное/белое».
+		if *imageFile != "" {
+			img, err := LoadImageFile(*imageFile, *length)
+			if err != nil {
+				fatal(err)
+			}
+			savePreview(img) // сам печатает путь и размер
+			return
+		}
 		// Рендер без принтера: удобно проверить макет до печати.
 		if len(posArgs) == 0 {
 			fatal(fmt.Errorf("не задан текст"))
@@ -172,7 +187,7 @@ func main() {
 		if err != nil {
 			fatal(err)
 		}
-		img, err := LoadImageFile(posArgs[0])
+		img, err := LoadImageFile(posArgs[0], *length)
 		if err != nil {
 			fatal(err)
 		}
@@ -194,7 +209,7 @@ func splitArgs(args []string) (flags []string, positional []string) {
 		hasInline := strings.Contains(name, "=")
 		base := strings.SplitN(name, "=", 2)[0]
 		flags = append(flags, "-"+name)
-		if !hasInline && flagSpec[base] {
+		if !hasInline && flagNeedsValue(base) {
 			// значение идёт следующим аргументом
 			if i+1 < len(args) {
 				i++
@@ -203,6 +218,19 @@ func splitArgs(args []string) (flags []string, positional []string) {
 		}
 	}
 	return
+}
+
+// flagNeedsValue сообщает, принимает ли флаг значение.
+// Булевы флаги (те, что реализуют IsBoolFlag) — не принимают.
+func flagNeedsValue(name string) bool {
+	f := flagSet.Lookup(name)
+	if f == nil {
+		return false
+	}
+	if bf, ok := f.Value.(interface{ IsBoolFlag() bool }); ok && bf.IsBoolFlag() {
+		return false
+	}
+	return true
 }
 
 // resolveLabel определяет тип этикетки для печати.

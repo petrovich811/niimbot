@@ -16,7 +16,16 @@ import (
 	"image"
 	"image/color"
 	"image/draw"
+	"math"
 	"os"
+
+	// Декодеры картинок: без них image.Decode не понимает ни один формат.
+	// PNG раньше работал случайно — его импортировали ради кодирования макета.
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
+
+	xdraw "golang.org/x/image/draw"
 
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/opentype"
@@ -238,7 +247,7 @@ func popcount(b byte) int {
 }
 
 // LoadImageFile открывает PNG/JPEG и приводит к нужному размеру.
-func LoadImageFile(path string) (*image.Gray, error) {
+func LoadImageFile(path string, lengthMM float64) (*image.Gray, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -248,8 +257,64 @@ func LoadImageFile(path string) (*image.Gray, error) {
 	if err != nil {
 		return nil, err
 	}
+	return FitToLabel(src, lengthMM), nil
+}
+
+// FitToLabel вписывает картинку в область этикетки.
+//
+// Принтер печатает 96 точек поперёк (12 мм), а длина этикетки задаётся
+// режимом. Картинка любого размера вписывается целиком с сохранением
+// пропорций и центрируется на белом поле. Так её можно готовить в любой
+// программе и не подгонять пиксели вручную: раньше размер брался как есть,
+// и картинка не по размеру головки ломала печать.
+//
+// Картинка, уже совпадающая с областью, возвращается без изменений —
+// чтобы заранее подготовленный макет не размывался пересчётом.
+func FitToLabel(src image.Image, lengthMM float64) *image.Gray {
+	if lengthMM <= 0 {
+		lengthMM = 30
+	}
+	targetW := int(math.Round(lengthMM * dotsPerMM))
+	targetH := printheadPixels
+
 	b := src.Bounds()
-	dst := image.NewGray(image.Rect(0, 0, b.Dx(), b.Dy()))
-	draw.Draw(dst, dst.Bounds(), src, b.Min, draw.Src)
-	return dst, nil
+	sw, sh := b.Dx(), b.Dy()
+	if sw <= 0 || sh <= 0 {
+		return whiteCanvas(targetW, targetH)
+	}
+
+	// Уже точный размер — отдаём как есть.
+	if sw == targetW && sh == targetH {
+		dst := image.NewGray(image.Rect(0, 0, targetW, targetH))
+		draw.Draw(dst, dst.Bounds(), src, b.Min, draw.Src)
+		return dst
+	}
+
+	// Вписываем с сохранением пропорций.
+	scale := math.Min(float64(targetW)/float64(sw), float64(targetH)/float64(sh))
+	dw := int(math.Round(float64(sw) * scale))
+	dh := int(math.Round(float64(sh) * scale))
+	if dw < 1 {
+		dw = 1
+	}
+	if dh < 1 {
+		dh = 1
+	}
+
+	scaled := image.NewGray(image.Rect(0, 0, dw, dh))
+	xdraw.CatmullRom.Scale(scaled, scaled.Bounds(), src, b, draw.Src, nil)
+
+	canvas := whiteCanvas(targetW, targetH)
+	offX := (targetW - dw) / 2
+	offY := (targetH - dh) / 2
+	draw.Draw(canvas, image.Rect(offX, offY, offX+dw, offY+dh), scaled, image.Point{}, draw.Src)
+	return canvas
+}
+
+// whiteCanvas создаёт белый холст нужного размера.
+// image.NewGray сам по себе ЧЁРНЫЙ — это уже однажды ломало печать.
+func whiteCanvas(w, h int) *image.Gray {
+	c := image.NewGray(image.Rect(0, 0, w, h))
+	draw.Draw(c, c.Bounds(), &image.Uniform{color.White}, image.Point{}, draw.Src)
+	return c
 }

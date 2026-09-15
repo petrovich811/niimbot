@@ -25,6 +25,7 @@ $ niimbot text "1 gulden" "1734"
 | `niimbot text "regel" "..."` | tekst printen; elke regel tekst is een apart argument |
 | `niimbot image bestand.png` | een afbeelding printen |
 | `niimbot preview "regel"` | een proefontwerp maken **zonder te printen** |
+| `niimbot preview --file img.png` | proefontwerp uit een afbeelding: wat inpassen en drempel overhouden |
 | `niimbot testpage` | de ingebouwde testpagina van de printer |
 | `niimbot gui` | grafische interface in de browser: **reeksen etiketten**, sjablonen, proefontwerp |
 | `niimbot scan` | de printer in de buurt zoeken |
@@ -171,6 +172,51 @@ Dat betekent: de eerste regel van het etiket is kolom 4, de tweede 1, dan 2 en 5
 kolom die je weglaat (hier de derde) komt niet op het etiket, en dezelfde kolom mag
 twee keer voorkomen. Het veld «Etikeksjabloon» vult zichzelf: `{4}`, `{1}`, `{2}`,
 `{5}` — en dat kun je daarna aanvullen, bijvoorbeeld `TAG {2}`.
+
+## Etiketten met een afbeelding
+
+```bash
+# kijk wat er geprint zou worden, zonder een etiket te verspillen
+./niimbot preview --file schets.png
+
+# printen
+./niimbot image schets.png
+```
+
+Formaten: **PNG, JPEG, GIF**. Een afbeelding van elk formaat wordt **in het
+etiketvlak gepast**, met behoud van verhoudingen, en op een wit veld gecentreerd —
+pixels handmatig passen is niet nodig.
+
+### Teken op de maat van het etiket
+
+De printer werkt op **203 dpi**, dat is **8 punten per millimeter**. Het etiketvlak:
+
+| Etiket | Formaat afbeelding |
+|---|---|
+| 14×30 mm | **240×96** punten |
+| 14×40 mm | 320×96 |
+| 14×50 mm | 400×96 |
+
+De hoogte is altijd **96** punten — de breedte van de printkop (12 mm) — en de
+breedte is de etiketlengte in millimeters maal 8.
+
+**Inpassen werkt, maar tekenen op die maat is beter.** Teken je 900×360, dan krimpt
+de tekst bijna viermaal en wordt hij wollig: de resolutie van het etiket is maar
+240×96, er is geen ruimte over.
+
+### Waarin tekenen
+
+| Programma | Wanneer handig |
+|---|---|
+| **Inkscape** | het best voor etiketten: document van 240×96 pixels, vormen en tekst, export naar PNG |
+| **GIMP** | als je een foto nodig hebt: schaal naar 8 pixels per millimeter, grijstinten |
+| **LibreOffice Draw** | als een kantooreditor vertrouwder voelt en eenvoudige vormen volstaan |
+| **ImageMagick** | vanaf de opdrachtregel: `convert bron.png -resize 240x96! etiket.png` |
+| al het andere | één ding telt: een PNG van de juiste maat |
+
+Er wordt **zwart-wit** geprint: grijs wordt zwart of wit volgens een drempel, dus
+halftinten en dunne lijnen verdwijnen. Controleer met `preview --file` — die toont
+precies wat de printer krijgt.
 
 ## Etiketten en oriëntatie
 

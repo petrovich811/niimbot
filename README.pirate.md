@@ -27,7 +27,8 @@ $ niimbot text "1 gulden" "1734"
 | `niimbot rfid` | read the RFID tags o' the label roll an' the ribbon |
 | `niimbot text "line" "..."` | print text; every line be its own argument, savvy? |
 | `niimbot image file.png` | print a picture |
-| `niimbot preview "line"` | draw the mock-up **without printin'** — see what would go on the label |
+| `niimbot preview "line"` | draw the mock-up **without printin'**
+| `niimbot preview --file img.png` | a mock-up from a picture: what survives the fittin' an' the threshold | — see what would go on the label |
 | `niimbot testpage` | the printer's own test page (to check the line be live) |
 | `niimbot gui` | a window in yer browser: **fleets o' labels**, templates, mock-ups |
 | `niimbot scan` | hunt fer the printer over the air |
@@ -173,6 +174,51 @@ That means: the label's first line be column 4, the second be 1, then 2 an' 5. A
 column ye leave out (the third here) never reaches the label, an' the same column
 may be listed twice. The «Label template» field fills herself in — `{4}`, `{1}`,
 `{2}`, `{5}` — an' ye can add to her after, e.g. `TAG {2}`.
+
+## Labels with a Picture
+
+```bash
+# see what would print, without wastin' a label
+./niimbot preview --file sketch.png
+
+# print her
+./niimbot image sketch.png
+```
+
+Formats: **PNG, JPEG, GIF**. A picture of any size be **stowed into the label's
+hold** whole, keepin' her proportions, an' centred on a white deck — no need to
+match pixels by hand.
+
+### Draw at the label's own size
+
+The printer runs at **203 dpi**, which be **8 dots to the millimetre**. The label's hold:
+
+| Label | Picture size |
+|---|---|
+| 14×30 mm | **240×96** dots |
+| 14×40 mm | 320×96 |
+| 14×50 mm | 400×96 |
+
+The height always be **96** dots — the printhead's width (12 mm) — an' the width be
+the label's length in millimetres times 8.
+
+**Fittin' works, but drawin' at that size be better.** Draw 900×360 an' the words
+shrink near fourfold an' turn woolly: the label's resolution be but 240×96, an'
+there be no room to spare.
+
+### What to draw in
+
+| Program | When she suits |
+|---|---|
+| **Inkscape** | best fer labels: a 240×96 pixel document, shapes an' words, export to PNG |
+| **GIMP** | when ye need a likeness: scale to 8 pixels to the millimetre, greyscale |
+| **LibreOffice Draw** | when an office editor feels more familiar an' simple shapes suffice |
+| **ImageMagick** | from the command line: `convert source.png -resize 240x96! label.png` |
+| anythin' else | one thing matters: a PNG of the right size |
+
+Printin' be **black an' white**: grey turns black or white by a threshold, so
+halftones an' thin lines walk the plank. Check with `preview --file` — she shows
+exactly what the printer gets.
 
 ## Labels an' Which Way Up She Prints
 

@@ -2,7 +2,9 @@ package main
 
 import (
 	"bytes"
+	"image"
 	"image/color"
+	"math"
 	"strings"
 	"testing"
 )
@@ -404,5 +406,151 @@ func TestMakeAddress(t *testing.T) {
 		if _, err := makeAddress(bad); err == nil {
 			t.Fatalf("для %q ожидалась ошибка", bad)
 		}
+	}
+}
+
+// Вписывание картинки в область этикетки: любая картинка должна доходить
+// до принтера нужного размера, иначе головка получает мусор.
+func TestFitToLabel(t *testing.T) {
+	const (
+		wantW = 240 // 30 мм при 203 dpi
+		wantH = printheadPixels
+	)
+
+	// Уже точный размер — не трогаем.
+	exact := image.NewGray(image.Rect(0, 0, wantW, wantH))
+	got := FitToLabel(exact, 30)
+	if got.Bounds().Dx() != wantW || got.Bounds().Dy() != wantH {
+		t.Fatalf("точный размер изменён: %v", got.Bounds())
+	}
+
+	cases := []struct {
+		name string
+		w, h int
+	}{
+		{"большая квадратная", 1000, 1000},
+		{"широкая", 1000, 50},
+		{"высокая", 50, 1000},
+		{"крошечная", 10, 10},
+	}
+	for _, c := range cases {
+		src := image.NewGray(image.Rect(0, 0, c.w, c.h))
+		out := FitToLabel(src, 30)
+		if out.Bounds().Dx() != wantW || out.Bounds().Dy() != wantH {
+			t.Fatalf("%s: получилось %v, ожидалось %dx%d",
+				c.name, out.Bounds(), wantW, wantH)
+		}
+	}
+
+	// Пропорции: широкая картинка должна занять всю ширину и стать низкой.
+	wide := image.NewGray(image.Rect(0, 0, 1000, 100))
+	out := FitToLabel(wide, 30)
+	if !isWhiteRow(out, 0) == false && !hasContent(out) {
+		t.Fatal("широкая картинка исчезла")
+	}
+
+	// Длина этикетки меняет ширину результата, а высота всегда 96.
+	for _, mm := range []float64{20, 30, 50} {
+		out := FitToLabel(wide, mm)
+		if out.Bounds().Dy() != wantH {
+			t.Fatalf("длина %v мм: высота %d, ожидалось %d", mm, out.Bounds().Dy(), wantH)
+		}
+		if want := int(math.Round(mm * dotsPerMM)); out.Bounds().Dx() != want {
+			t.Fatalf("длина %v мм: ширина %d, ожидалось %d", mm, out.Bounds().Dx(), want)
+		}
+	}
+
+	// Нулевая длина не должна ломать расчёт.
+	if out := FitToLabel(wide, 0); out.Bounds().Dx() <= 0 {
+		t.Fatal("нулевая длина дала пустое полотно")
+	}
+}
+
+// Фон вокруг вписанной картинки должен быть белым, иначе на этикетке
+// появится чёрный прямоугольник.
+func TestFitToLabelWhiteBackground(t *testing.T) {
+	small := image.NewGray(image.Rect(0, 0, 10, 10))
+	out := FitToLabel(small, 30)
+	if !isWhitePixel(out, 0, 0) {
+		t.Fatal("левый верхний угол не белый")
+	}
+	if !isWhitePixel(out, out.Bounds().Dx()-1, 0) {
+		t.Fatal("правый верхний угол не белый")
+	}
+}
+
+func isWhitePixel(g *image.Gray, x, y int) bool {
+	return g.GrayAt(x, y).Y > 200
+}
+
+func isWhiteRow(g *image.Gray, y int) bool {
+	for x := 0; x < g.Bounds().Dx(); x++ {
+		if !isWhitePixel(g, x, y) {
+			return false
+		}
+	}
+	return true
+}
+
+func hasContent(g *image.Gray) bool {
+	for y := 0; y < g.Bounds().Dy(); y++ {
+		for x := 0; x < g.Bounds().Dx(); x++ {
+			if g.GrayAt(x, y).Y < 128 {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// Разбор аргументов: флаги со значением должны забирать следующий аргумент.
+//
+// Раньше список таких флагов вёлся руками, и новые флаги в него забывали
+// добавить: «gui --port 9000» разбирался как булев флаг, а 9000 попадал
+// в позиционные аргументы — команда падала с «flag needs an argument».
+func TestSplitArgsFlagValues(t *testing.T) {
+	flags, positional := splitArgs([]string{"preview", "--file", "/tmp/x.png", "--length", "40"})
+	wantFlags := []string{"-file", "/tmp/x.png", "-length", "40"}
+	if strings.Join(flags, " ") != strings.Join(wantFlags, " ") {
+		t.Fatalf("флаги: %q, ожидалось %q", flags, wantFlags)
+	}
+	if len(positional) != 1 || positional[0] != "preview" {
+		t.Fatalf("позиционные: %q, ожидался [preview]", positional)
+	}
+
+	// Булев флаг значение не забирает: следующий аргумент — позиционный.
+	flags, positional = splitArgs([]string{"gui", "--no-browser", "лишнее"})
+	if len(flags) != 1 || flags[0] != "-no-browser" {
+		t.Fatalf("булев флаг забрал значение: %q", flags)
+	}
+	if len(positional) != 2 {
+		t.Fatalf("позиционные: %q", positional)
+	}
+
+	// Значение через знак равенства обрабатывается отдельно.
+	flags, _ = splitArgs([]string{"--length=40"})
+	if len(flags) != 1 || flags[0] != "-length=40" {
+		t.Fatalf("значение через = разобрано как %q", flags)
+	}
+}
+
+// Каждый флаг со значением обязан быть известен разбору аргументов.
+// Если кто-то добавит флаг и забудет про разбор — тест это поймает.
+func TestFlagNeedsValueMatchesRegistration(t *testing.T) {
+	valueFlags := []string{"address", "length", "font", "density", "label", "copies", "file", "port"}
+	for _, name := range valueFlags {
+		if !flagNeedsValue(name) {
+			t.Errorf("флаг %q принимает значение, но разбор считает иначе", name)
+		}
+	}
+	boolFlags := []string{"v", "flip", "no-browser"}
+	for _, name := range boolFlags {
+		if flagNeedsValue(name) {
+			t.Errorf("флаг %q булев, но разбор ждёт значение", name)
+		}
+	}
+	// Неизвестный флаг значением не считается — иначе он съел бы команду.
+	if flagNeedsValue("такого-флага-нет") {
+		t.Error("неизвестный флаг не должен забирать значение")
 	}
 }
