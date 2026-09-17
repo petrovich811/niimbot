@@ -227,6 +227,23 @@ Ontbreekt het genoemde lettertype, dan **weigert de driver te printen** en zegt 
 lettertype er mist. Stil iets anders invullen mag niet: het etiket zou er anders
 uitkomen dan bedoeld, en alleen een menselijk oog op papier zou dat merken.
 
+### Lijnen, kaders en rotatie
+
+| Element | Wat het geeft |
+|---|---|
+| **Lijn** | een gevulde balk: scheiding tussen regels of een solide blok |
+| **Kader** | een omtrek langs de randen, dikte instelbaar (standaard 0,3 mm) |
+| **Tekstrotatie** | `0°`, `90°`, `180°`, `270°` — voor kabel-etiketten waar tekst dwars loopt |
+
+Bij een geroteerd element is de breedte (`w`) de **lengte van de tekst**, geen
+kaderbreedte: na rotatie wordt die de hoogte van het blok. Het doek toont de rotatie
+eerlijk: bij 90° en 270° wisselen breedte en hoogte.
+
+**Vastklikken aan randen.** Tijdens het slepen wordt een element niet alleen naar het
+raster van 0,5 mm getrokken, maar ook naar de **randen en het midden** van het etiket —
+er verschijnen rode hulplijnen. **Alt** schakelt dat uit als je iets op het oog wilt
+plaatsen.
+
 ### Het sjabloon als gegevens
 
 Voor wie via de API werkt, is een sjabloon ook zonder ontwerper leesbaar:

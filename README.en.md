@@ -224,6 +224,22 @@ If the named font is missing, the driver **refuses to print** and says which one
 absent. Silently substituting another is not allowed: the label would come out
 different from the intent, and only a human eye on paper would notice.
 
+### Lines, frames and rotation
+
+| Element | What it gives |
+|---|---|
+| **Line** | a filled bar: a separator between lines, or a solid block |
+| **Frame** | an outline around the edges, with a settable thickness (0.3 mm by default) |
+| **Text rotation** | `0°`, `90°`, `180°`, `270°` — for cable labels where text runs across |
+
+For a rotated element the width (`w`) is the **length of the text**, not a box width:
+after rotation it becomes the block's height. The designer's canvas shows the
+rotation honestly: at 90° and 270° the width and height swap.
+
+**Edge snapping.** While dragging, an element is pulled not only to the 0.5 mm grid
+but also to the label's **edges and centre** — red guide lines appear on the canvas.
+Hold **Alt** to switch edge snapping off when you want to place something by eye.
+
 ### A template as data
 
 For those working through the API, a template reads plainly without the designer:

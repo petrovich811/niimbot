@@ -228,6 +228,22 @@ If the named font be missin', the driver **refuses to print** an' says which one
 absent. Slippin' in another on the quiet be not allowed: the label would come out
 different from yer intent, an' only a human eye on paper would catch it.
 
+### Lines, Frames an' Rotation
+
+| Element | What she gives |
+|---|---|
+| **Line** | a filled bar: a divider between lines, or a solid block |
+| **Frame** | an outline along the edges, thickness yer own (0.3 mm by default) |
+| **Turnin' the words** | `0°`, `90°`, `180°`, `270°` — fer cable labels where words run across |
+
+Fer a turned element the width (`w`) be the **length o' the words**, not a box width:
+after the turn she becomes the block's height. The canvas shows the turn honest: at
+90° an' 270° width an' height swap.
+
+**Snappin' to the edges.** While draggin', an element be pulled not only to the
+0.5 mm grid but to the label's **edges an' middle** — red guide lines appear on the
+canvas. Hold **Alt** to turn edge snappin' off when ye'd place her by eye.
+
 ### A template as cargo
 
 Fer them workin' through the API, a template reads plain without the draughtsman:
