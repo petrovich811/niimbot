@@ -70,8 +70,14 @@
       </div>
       <div id="text-props">
         <label>Текст <input type="text" id="p-text"></label>
+        <label>Шрифт
+          <select id="p-family"><option value="">по умолчанию</option></select>
+        </label>
         <div class="grid">
           <label>Кегль, мм <input type="number" id="p-font" step="0.5" min="1" max="12"></label>
+          <label>Высота строки, мм <input type="number" id="p-line" step="0.2" min="0" max="20">
+            <small>0 — по шрифту</small>
+          </label>
           <label>Выравнивание
             <select id="p-align">
               <option value="left">по левому краю</option>
@@ -79,6 +85,7 @@
               <option value="right">по правому краю</option>
             </select>
           </label>
+          <label class="check"><input type="checkbox" id="p-bold"> Жирный</label>
         </div>
       </div>
       <div id="image-props">

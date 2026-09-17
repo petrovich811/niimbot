@@ -78,8 +78,11 @@ function renderCanvas() {
     } else {
       node.style.width = (el.w || labelLength()) * scale + 'px';
       node.style.fontSize = (el.font || 2.5) * scale + 'px';
-      node.style.lineHeight = (el.font || 2.5) * scale * 1.15 + 'px';
+      const lh = el.line > 0 ? el.line : (el.font || 2.5) * 1.15;
+      node.style.lineHeight = lh * scale + 'px';
       node.style.textAlign = el.align || 'left';
+      if (el.family) node.style.fontFamily = `"${el.family}", sans-serif`;
+      node.style.fontWeight = el.bold ? '700' : '400';
       node.textContent = el.text || '';
     }
     label.appendChild(node);
@@ -150,6 +153,22 @@ document.addEventListener('keydown', (e) => {
 
 // ------------------------------------------------------------------ свойства
 
+// Список системных шрифтов приходит с сервера: в шаблоне хранится семейство.
+async function loadFonts() {
+  try {
+    const r = await fetch('/api/fonts');
+    const d = await r.json();
+    const sel = $('p-family');
+    sel.innerHTML = '<option value="">по умолчанию</option>';
+    (d.families || []).forEach((f) => {
+      const o = document.createElement('option');
+      o.value = f;
+      o.textContent = f;
+      sel.appendChild(o);
+    });
+  } catch (e) { /* без списка шрифтов конструктор всё равно работает */ }
+}
+
 function showProps() {
   const has = selected >= 0 && selected < elements.length;
   $('props').classList.toggle('hidden', !has);
@@ -163,6 +182,9 @@ function showProps() {
   $('p-h').value = el.h || 0;
   $('p-text').value = el.text || '';
   $('p-font').value = el.font || 2.5;
+  $('p-line').value = el.line || 0;
+  $('p-family').value = el.family || '';
+  $('p-bold').checked = !!el.bold;
   $('p-align').value = el.align || 'left';
 
   const isText = el.kind === 'text';
@@ -187,6 +209,14 @@ bindProp('p-h', (el, v) => { el.h = Math.max(0, parseFloat(v) || 0); });
 bindProp('p-text', (el, v) => { el.text = v; });
 bindProp('p-font', (el, v) => { el.font = Math.max(1, parseFloat(v) || 2.5); });
 bindProp('p-align', (el, v) => { el.align = v; });
+bindProp('p-family', (el, v) => { el.family = v; });
+bindProp('p-line', (el, v) => { el.line = Math.max(0, parseFloat(v) || 0); });
+$('p-bold').addEventListener('change', () => {
+  if (selected < 0) return;
+  elements[selected].bold = $('p-bold').checked;
+  renderCanvas();
+  schedulePreview();
+});
 
 $('p-image-file').addEventListener('change', (e) => {
   const file = e.target.files[0];
@@ -208,7 +238,8 @@ function readAsDataURL(file, cb) {
 // ------------------------------------------------------------------- кнопки
 
 $('add-text').onclick = () => {
-  elements.push({ kind: 'text', x: 1, y: 1, w: labelLength() - 2, text: 'Надпись {1}', font: 3, align: 'left' });
+  elements.push({ kind: 'text', x: 1, y: 1, w: labelLength() - 2, text: 'Надпись {1}', font: 3,
+                   align: 'left', family: $('p-family').value || '', bold: $('p-bold').checked });
   select(elements.length - 1);
   refreshPreview();
 };
@@ -465,6 +496,8 @@ if (!elements.length) {
 }
 
 loadStatus();
+loadFonts();
 loadTemplates();
 renderCanvas();
+showProps();
 updateCount();

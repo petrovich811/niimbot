@@ -499,6 +499,20 @@ func startGUI(address string, port int, openBrowserFlag, verbose bool) error {
 		}
 	})
 
+	// Список системных шрифтов для конструктора.
+	mux.HandleFunc("/api/fonts", func(w http.ResponseWriter, r *http.Request) {
+		families := fontFamiliesForPicker()
+		if families == nil {
+			writeErr(w, http.StatusInternalServerError,
+				fmt.Errorf("не удалось прочитать список шрифтов"))
+			return
+		}
+		writeJSON(w, map[string]any{
+			"families": families,
+			"default":  "DejaVu Sans", // встроенный выбор драйвера
+		})
+	})
+
 	mux.HandleFunc("/api/templates", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:

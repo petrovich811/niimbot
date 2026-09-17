@@ -8,6 +8,7 @@ import (
 	"image/draw"
 	"image/png"
 	"math"
+	"os"
 	"strings"
 	"testing"
 )
@@ -762,5 +763,124 @@ func TestRenderTemplateBadElements(t *testing.T) {
 		if _, err := RenderTemplate(tpl, nil); err == nil {
 			t.Fatalf("случай %d: ожидалась ошибка", i+1)
 		}
+	}
+}
+
+// --- шрифты ---
+
+// Системные шрифты должны читаться, и кириллица в них распознаваться.
+func TestSystemFonts(t *testing.T) {
+	list, err := SystemFonts()
+	if err != nil {
+		t.Fatalf("список шрифтов: %v", err)
+	}
+	if len(list) == 0 {
+		t.Skip("в системе не нашлось шрифтов — проверять нечего")
+	}
+	var withCyr, withPath int
+	for _, f := range list {
+		if f.Family == "" {
+			t.Fatalf("шрифт без названия семейства: %+v", f)
+		}
+		if f.Path == "" {
+			t.Fatalf("шрифт без пути: %+v", f)
+		}
+		withPath++
+		if f.Cyrillic {
+			withCyr++
+		}
+	}
+	if withPath != len(list) {
+		t.Fatalf("у части шрифтов нет пути")
+	}
+	// В списке для выбора кириллица обязательна: на этикетках русский текст.
+	for _, fam := range fontFamiliesForPicker() {
+		found := false
+		for _, f := range list {
+			if f.Family == fam && f.Cyrillic {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("в списке для выбора семейство без кириллицы: %q", fam)
+		}
+	}
+}
+
+// Выбор шрифта: найденное семейство даёт путь, несуществующее — нет.
+func TestResolveFontFamily(t *testing.T) {
+	list, err := SystemFonts()
+	if err != nil || len(list) == 0 {
+		t.Skip("шрифтов нет — проверять нечего")
+	}
+
+	var family string
+	for _, f := range list {
+		if f.Cyrillic && !f.Italic {
+			family = f.Family
+			break
+		}
+	}
+	if family == "" {
+		t.Skip("семейства с кириллицей не нашлось")
+	}
+
+	path, ok := resolveFontFamily(family, false)
+	if !ok || path == "" {
+		t.Fatalf("семейство %q не разрешилось в файл", family)
+	}
+	if _, err := os.Stat(path); err != nil {
+		t.Fatalf("файл шрифта %q недоступен: %v", path, err)
+	}
+
+	// Регистр не должен иметь значения.
+	if _, ok := resolveFontFamily(strings.ToUpper(family), false); !ok {
+		t.Fatalf("семейство %q не найдено в другом регистре", family)
+	}
+
+	if _, ok := resolveFontFamily("Такого Шрифта Точно Нет 12345", false); ok {
+		t.Fatal("несуществующее семейство разрешилось в файл")
+	}
+}
+
+// Элемент с чужим шрифтом — понятная ошибка, а не молчаливая подмена.
+func TestRenderTemplateMissingFont(t *testing.T) {
+	_, err := RenderTemplate(LabelTemplate{
+		LengthMM: 30,
+		Elements: []Element{{
+			Kind: "text", X: 1, Y: 1, Text: "текст", FontMM: 3,
+			Family: "Такого Шрифта Точно Нет 12345",
+		}},
+	}, nil)
+	if err == nil {
+		t.Fatal("ожидалась ошибка про отсутствующий шрифт")
+	}
+	if !strings.Contains(err.Error(), "не найден") {
+		t.Fatalf("непонятная ошибка: %v", err)
+	}
+}
+
+// Высота строки раздвигает строки многострочной надписи.
+func TestRenderTemplateLineHeight(t *testing.T) {
+	rowsSpan := func(lineMM float64) int {
+		img, err := RenderTemplate(LabelTemplate{
+			LengthMM: 30,
+			Elements: []Element{{
+				Kind: "text", X: 1, Y: 0.5, Text: "раз\nдва", FontMM: 2, LineMM: lineMM,
+			}},
+		}, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, maxY := inkRows(img)
+		return maxY
+	}
+
+	dense := rowsSpan(0)
+	sparse := rowsSpan(4.5)
+	if sparse <= dense {
+		t.Fatalf("высота строки не подействовала: по шрифту до %d, с шагом 4,5 мм до %d",
+			dense, sparse)
 	}
 }

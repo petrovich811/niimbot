@@ -36,8 +36,11 @@ type Element struct {
 
 	// Надпись
 	Text   string  `json:"text,omitempty"`
-	FontMM float64 `json:"font,omitempty"`  // высота строки в мм
-	Align  string  `json:"align,omitempty"` // left | center | right (внутри рамки X..X+W)
+	FontMM float64 `json:"font,omitempty"`   // высота шрифта в мм
+	LineMM float64 `json:"line,omitempty"`   // высота строки в мм; 0 — по шрифту
+	Family string  `json:"family,omitempty"` // семейство шрифта; пусто — по умолчанию
+	Bold   bool    `json:"bold,omitempty"`   // жирное начертание
+	Align  string  `json:"align,omitempty"`  // left | center | right (внутри рамки X..X+W)
 
 	// Картинка: путь к файлу или data:URL с base64
 	Image string `json:"image,omitempty"`
@@ -90,7 +93,7 @@ func drawTextElement(img *image.Gray, el Element, row []string) error {
 	if fontMM <= 0 {
 		fontMM = 2.5 // разумное умолчание, если кегль не задан
 	}
-	fontPath, err := findFontFile()
+	fontPath, err := pickFont(el.Family, el.Bold)
 	if err != nil {
 		return err
 	}
@@ -103,11 +106,16 @@ func drawTextElement(img *image.Gray, el Element, row []string) error {
 
 	lines := strings.Split(text, "\n")
 	metrics := face.Metrics()
+	ascent := metrics.Ascent.Ceil()
+
+	// Высота строки: заданная в мм или по метрикам шрифта.
 	lineH := metrics.Height.Ceil()
+	if el.LineMM > 0 {
+		lineH = int(math.Round(el.LineMM * dotsPerMM))
+	}
 	if lineH <= 0 {
 		lineH = int(fontMM*dotsPerMM) + 2
 	}
-	ascent := metrics.Ascent.Ceil()
 
 	x0 := int(math.Round(el.X * dotsPerMM))
 	y0 := int(math.Round(el.Y * dotsPerMM))
@@ -140,6 +148,23 @@ func drawTextElement(img *image.Gray, el Element, row []string) error {
 		d.DrawString(line)
 	}
 	return nil
+}
+
+// pickFont выбирает файл шрифта для элемента.
+//
+// Пустое семейство — встроенный шрифт по умолчанию. Если названного
+// семейства в системе нет, это ошибка: молча подменить шрифт нельзя,
+// иначе этикетка выйдет не такой, как задумано, и заметит это только
+// человек, глядя на бумагу.
+func pickFont(family string, bold bool) (string, error) {
+	if strings.TrimSpace(family) == "" {
+		return findFontFile()
+	}
+	path, ok := resolveFontFamily(family, bold)
+	if !ok {
+		return "", fmt.Errorf("шрифт %q не найден в системе — выберите другой в конструкторе", family)
+	}
+	return path, nil
 }
 
 // drawImageElement рисует картинку в её рамке.
