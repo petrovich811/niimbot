@@ -497,6 +497,9 @@ and the white canvas background.
 - **a frame, a divider and a 90° text rotation** — printed together on one label:
   the frame is whole on all four sides, the divider is straight, and the rotated text
   reads when the head is tilted;
+- **print density** — all three levels (1, 2 and 3) give a usable print, including a
+  0.2 mm hairline and 1.6 mm small text; **2** was judged the best, which is why it is
+  the default;
 - **a picture drawn at the label's own size is crisper** than the same picture
   shrunk from a large canvas. Compared on paper: 240×96 against 900×360 — the
   first is clearly better. So "draw at that size" is not fussiness, it follows

@@ -500,6 +500,9 @@ pakketten, de punttellers, de oriëntatie van regels en de witte achtergrond.
 - **kader, scheidingslijn en een tekstrotatie van 90°** — samen op één etiket
   geprint: het kader is rondom heel, de lijn is recht en de geroteerde tekst leest
   met een schuin hoofd;
+- **printdichtheid** — alle drie de standen (1, 2 en 3) geven een bruikbare afdruk,
+  inclusief een hairline van 0,2 mm en kleine tekst van 1,6 mm; **2** werd het best
+  bevonden en is daarom de standaard;
 - **een afbeelding die op de maat van het etiket is getekend is scherper** dan
   dezelfde afbeelding verkleind uit een groot canvas. Vergeleken op papier:
   240×96 tegen 900×360 — de eerste is duidelijk beter. «Teken op die maat» is dus

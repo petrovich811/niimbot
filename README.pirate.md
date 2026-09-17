@@ -496,6 +496,9 @@ way rows lie an' the white canvas behind 'em.
 - **a frame, a divider an' a 90° turned word** — printed together on one label: the
   frame be whole on all four sides, the divider be straight, an' the turned word
   reads with yer head tilted;
+- **printin' density** — all three marks (1, 2 an' 3) give a seaworthy print, hairline
+  of 0.2 mm an' small text of 1.6 mm included; **2** were judged the best, an' so she
+  be the default;
 - **a picture drawn at the label's own size be crisper** than the same picture
   shrunk from a great canvas. Compared on paper: 240×96 against 900×360 — the
   first be plainly better. So «draw at that size» be no fussiness, it follows
