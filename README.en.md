@@ -201,6 +201,29 @@ ruler on top. The "1 mm grid" checkbox hides the ruling.
 Remember that **1 mm is 8 dots**. A 14×30 label holds only 240×96 dots, so four
 lines larger than 2.5 mm will not fit.
 
+### Font and line height
+
+Every text element has its own font: **family**, **weight** and **line height**.
+
+| Field | What it sets |
+|---|---|
+| **Font** | a system family: "Arial", "DejaVu Sans", "Times New Roman", "Comic Sans MS"… |
+| **Size, mm** | letter height |
+| **Line height, mm** | spacing between lines inside one element; `0` follows the font metrics |
+| **Bold** | a bold face, when the family has one |
+
+The font list comes **from the system**: Linux (`/usr/share/fonts`, `~/.fonts`,
+`~/.local/share/fonts`) and Windows (`C:\Windows\Fonts`, plus the current user's
+fonts). The drop-down lists only families **with Cyrillic**, since labels are almost
+always Russian text. `/api/fonts` returns the full list.
+
+A template stores the **family name**, not a file path: it survives being carried to
+another machine where the same font lives elsewhere.
+
+If the named font is missing, the driver **refuses to print** and says which one is
+absent. Silently substituting another is not allowed: the label would come out
+different from the intent, and only a human eye on paper would notice.
+
 ### A template as data
 
 For those working through the API, a template reads plainly without the designer:

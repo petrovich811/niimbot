@@ -205,6 +205,29 @@ aloft. The «1 mm grid» box hides the rulin'.
 Mind that **1 mm be 8 dots**. A 14×30 label holds but 240×96 dots, so four lines
 bigger than 2.5 mm will not fit aboard.
 
+### Font an' Line Height
+
+Every text element has her own font: **family**, **weight** an' **line height**.
+
+| Field | What she sets |
+|---|---|
+| **Font** | a system family: «Arial», «DejaVu Sans», «Times New Roman», «Comic Sans MS»… |
+| **Size, mm** | height o' the letters |
+| **Line height, mm** | space between lines inside one element; `0` follows the font's metrics |
+| **Bold** | a bold face, when the family has one |
+
+The font list comes **from the ship's system**: Linux (`/usr/share/fonts`, `~/.fonts`,
+`~/.local/share/fonts`) an' Windows (`C:\Windows\Fonts`, plus the current sailor's
+fonts). The drop-down lists only families **with Cyrillic**, since labels be almost
+always Russian text. `/api/fonts` gives the whole list.
+
+A template keeps the **family name**, not a file path: she survives bein' carried to
+another ship where the same font lies elsewhere.
+
+If the named font be missin', the driver **refuses to print** an' says which one be
+absent. Slippin' in another on the quiet be not allowed: the label would come out
+different from yer intent, an' only a human eye on paper would catch it.
+
 ### A template as cargo
 
 Fer them workin' through the API, a template reads plain without the draughtsman:

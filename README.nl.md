@@ -203,6 +203,30 @@ boven. Het vakje «1 mm-raster» verbergt de verdeling.
 Onthoud dat **1 mm 8 punten is**. Een etiket van 14×30 houdt maar 240×96 punten over,
 dus vier regels groter dan 2,5 mm passen er niet op.
 
+### Lettertype en regelhoogte
+
+Elk tekstelement heeft zijn eigen lettertype: **familie**, **gewicht** en
+**regelhoogte**.
+
+| Veld | Wat het instelt |
+|---|---|
+| **Lettertype** | een systeemfamilie: «Arial», «DejaVu Sans», «Times New Roman», «Comic Sans MS»… |
+| **Grootte, mm** | hoogte van de letters |
+| **Regelhoogte, mm** | afstand tussen regels binnen één element; `0` volgt de metriek van het lettertype |
+| **Vet** | een vet gezicht, als de familie die heeft |
+
+De lettertypenlijst komt **uit het systeem**: Linux (`/usr/share/fonts`, `~/.fonts`,
+`~/.local/share/fonts`) en Windows (`C:\Windows\Fonts`, plus de lettertypen van de
+huidige gebruiker). De keuzelijst toont alleen families **met Cyrillisch**, want
+etiketten zijn bijna altijd Russische tekst. `/api/fonts` geeft de volledige lijst.
+
+Een sjabloon bewaart de **familienaam**, niet een bestandspad: het overleeft een
+verhuizing naar een andere machine waar hetzelfde lettertype elders staat.
+
+Ontbreekt het genoemde lettertype, dan **weigert de driver te printen** en zegt welk
+lettertype er mist. Stil iets anders invullen mag niet: het etiket zou er anders
+uitkomen dan bedoeld, en alleen een menselijk oog op papier zou dat merken.
+
 ### Het sjabloon als gegevens
 
 Voor wie via de API werkt, is een sjabloon ook zonder ontwerper leesbaar:
