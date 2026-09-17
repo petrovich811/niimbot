@@ -497,6 +497,9 @@ pakketten, de punttellers, de oriëntatie van regels en de witte achtergrond.
 - **lettertype en regelhoogte** — vier lettertypen (Arial, Times New Roman,
   Comic Sans MS, DejaVu Sans) zijn op papier te onderscheiden, en een regelhoogte
   van 4 mm spreidt de regels zichtbaar;
+- **kader, scheidingslijn en een tekstrotatie van 90°** — samen op één etiket
+  geprint: het kader is rondom heel, de lijn is recht en de geroteerde tekst leest
+  met een schuin hoofd;
 - **een afbeelding die op de maat van het etiket is getekend is scherper** dan
   dezelfde afbeelding verkleind uit een groot canvas. Vergeleken op papier:
   240×96 tegen 900×360 — de eerste is duidelijk beter. «Teken op die maat» is dus

@@ -493,6 +493,9 @@ way rows lie an' the white canvas behind 'em.
   at their coordinates an' the alignin' works;
 - **font an' line height** — four fonts (Arial, Times New Roman, Comic Sans MS,
   DejaVu Sans) be told apart on paper, an' a 4 mm line height spreads the lines plain;
+- **a frame, a divider an' a 90° turned word** — printed together on one label: the
+  frame be whole on all four sides, the divider be straight, an' the turned word
+  reads with yer head tilted;
 - **a picture drawn at the label's own size be crisper** than the same picture
   shrunk from a great canvas. Compared on paper: 240×96 against 900×360 — the
   first be plainly better. So «draw at that size» be no fussiness, it follows

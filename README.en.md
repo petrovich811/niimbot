@@ -494,6 +494,9 @@ and the white canvas background.
 - **font and line height** — four fonts (Arial, Times New Roman, Comic Sans MS,
   DejaVu Sans) are distinguishable on paper, and a 4 mm line height visibly spreads
   the lines;
+- **a frame, a divider and a 90° text rotation** — printed together on one label:
+  the frame is whole on all four sides, the divider is straight, and the rotated text
+  reads when the head is tilted;
 - **a picture drawn at the label's own size is crisper** than the same picture
   shrunk from a large canvas. Compared on paper: 240×96 against 900×360 — the
   first is clearly better. So "draw at that size" is not fussiness, it follows
