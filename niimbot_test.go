@@ -1058,7 +1058,7 @@ func TestRenderSmiles(t *testing.T) {
 	if !ChemAvailable() {
 		t.Skip("RDKit не установлен — пропускаю")
 	}
-	st, err := RenderSmiles("CC(=CCCC(C)(C=C)O)C", 96, 96, 2)
+	st, err := RenderSmiles("CC(=CCCC(C)(C=C)O)C", 96, 96, 0, 2)
 	if err != nil {
 		t.Fatalf("структура не нарисована: %v", err)
 	}
@@ -1079,7 +1079,7 @@ func TestRenderSmiles(t *testing.T) {
 	}
 
 	// Повторный вызов берётся из кэша и даёт тот же результат.
-	again, err := RenderSmiles("CC(=CCCC(C)(C=C)O)C", 96, 96, 2)
+	again, err := RenderSmiles("CC(=CCCC(C)(C=C)O)C", 96, 96, 0, 2)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1093,10 +1093,10 @@ func TestRenderSmilesBadInput(t *testing.T) {
 	if !ChemAvailable() {
 		t.Skip("RDKit не установлен — пропускаю")
 	}
-	if _, err := RenderSmiles("это не молекула", 96, 96, 2); err == nil {
+	if _, err := RenderSmiles("это не молекула", 96, 96, 0, 2); err == nil {
 		t.Fatal("ожидалась ошибка разбора SMILES")
 	}
-	if _, err := RenderSmiles("   ", 96, 96, 2); err == nil {
+	if _, err := RenderSmiles("   ", 96, 96, 0, 2); err == nil {
 		t.Fatal("пустая строка SMILES должна давать ошибку")
 	}
 }

@@ -344,12 +344,20 @@ func drawImageElement(img *image.Gray, el Element) error {
 		return fmt.Errorf("картинка получается меньше точки")
 	}
 
+	angle := ((el.Rotate % 360) + 360) % 360
+	if angle == 90 || angle == 270 {
+		dw, dh = dh, dw // поворот меняет местами ширину и высоту
+	}
 	scaled := image.NewGray(image.Rect(0, 0, dw, dh))
 	drawScaled(scaled, src)
+	if angle != 0 {
+		scaled = rotateGray(scaled, angle)
+	}
 
 	x0 := int(math.Round(el.X * dotsPerMM))
 	y0 := int(math.Round(el.Y * dotsPerMM))
-	draw.Draw(img, image.Rect(x0, y0, x0+dw, y0+dh), scaled, image.Point{}, draw.Src)
+	draw.Draw(img, image.Rect(x0, y0, x0+scaled.Bounds().Dx(), y0+scaled.Bounds().Dy()),
+		scaled, image.Point{}, draw.Src)
 	return nil
 }
 
@@ -421,6 +429,10 @@ func substituteFields(text string, row []string, now time.Time) (string, error) 
 }
 
 // drawSmilesElement рисует химическую структуру по строке SMILES.
+//
+// Поворот на 90° нужен не для красоты: высота этикетки всего 12 мм, и
+// квадратная структура упирается в неё. Повёрнутая может занять ВСЮ длину
+// этикетки — то есть стать в два с лишним раза крупнее.
 func drawSmilesElement(img *image.Gray, el Element, row []string, now time.Time) error {
 	if el.W <= 0 || el.H <= 0 {
 		return fmt.Errorf("у структуры не заданы размеры (w и h в мм)")
@@ -433,12 +445,25 @@ func drawSmilesElement(img *image.Gray, el Element, row []string, now time.Time)
 	if bond <= 0 {
 		bond = 2 // тонкие связи при 96 точках пропадают — проверено
 	}
-	st, err := RenderSmiles(smiles, mmToDotsMin(el.W), mmToDotsMin(el.H), bond)
+
+	// Поворот делает сам RDKit: он раскладывает молекулу под нужную рамку,
+	// а не вписывает её в квадрат и потом крутит. Так структура занимает
+	// всю отведённую площадь — важно, когда высота этикетки всего 12 мм.
+	angle := ((el.Rotate % 360) + 360) % 360
+	st, err := RenderSmiles(smiles, mmToDotsMin(el.W), mmToDotsMin(el.H), angle, bond)
 	if err != nil {
 		return err
 	}
+
+	// Размещаем по фактическому размеру с учётом выравнивания.
 	x0, y0 := mmToDots(el.X), mmToDots(el.Y)
-	draw.Draw(img, image.Rect(x0, y0, x0+st.Bounds().Dx(), y0+st.Bounds().Dy()),
-		st, image.Point{}, draw.Src)
+	stW, stH := st.Bounds().Dx(), st.Bounds().Dy()
+	switch strings.ToLower(el.Align) {
+	case "center":
+		x0 += (mmToDots(el.W) - stW) / 2
+	case "right":
+		x0 += mmToDots(el.W) - stW
+	}
+	draw.Draw(img, image.Rect(x0, y0, x0+stW, y0+stH), st, image.Point{}, draw.Src)
 	return nil
 }

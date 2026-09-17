@@ -42,6 +42,7 @@ w, h = int(req["w"]), int(req["h"])
 d = rdMolDraw2D.MolDraw2DCairo(w, h)
 o = d.drawOptions()
 o.bondLineWidth = float(req.get("bond", 2.0))
+o.rotate = float(req.get("rotate", 0))
 o.padding = float(req.get("padding", 0.02))
 o.clearBackground = True
 rdMolDraw2D.PrepareAndDrawMolecule(d, mol)
@@ -93,7 +94,7 @@ func chemPython() string {
 //
 // Результат кэшируется по строке и размеру: в серии из полусотни этикеток
 // одна и та же молекула рисуется один раз.
-func RenderSmiles(smiles string, width, height int, bond float64) (*image.Gray, error) {
+func RenderSmiles(smiles string, width, height, rotate int, bond float64) (*image.Gray, error) {
 	smiles = strings.TrimSpace(smiles)
 	if smiles == "" {
 		return nil, fmt.Errorf("не задана строка SMILES")
@@ -111,7 +112,8 @@ func RenderSmiles(smiles string, width, height int, bond float64) (*image.Gray, 
 		bond = 2
 	}
 
-	key := fmt.Sprintf("%s|%d|%d|%.1f", smiles, width, height, bond)
+	rotate = ((rotate % 360) + 360) % 360
+	key := fmt.Sprintf("%s|%d|%d|%d|%.1f", smiles, width, height, rotate, bond)
 	chemMu.Lock()
 	if img, ok := chemCache[key]; ok {
 		chemMu.Unlock()
@@ -119,7 +121,7 @@ func RenderSmiles(smiles string, width, height int, bond float64) (*image.Gray, 
 	}
 	chemMu.Unlock()
 
-	img, err := runRdkit(smiles, width, height, bond)
+	img, err := runRdkit(smiles, width, height, rotate, bond)
 	if err != nil {
 		return nil, err
 	}
@@ -131,14 +133,14 @@ func RenderSmiles(smiles string, width, height int, bond float64) (*image.Gray, 
 }
 
 // runRdkit запускает Python с RDKit и возвращает нарисованную структуру.
-func runRdkit(smiles string, width, height int, bond float64) (*image.Gray, error) {
+func runRdkit(smiles string, width, height, rotate int, bond float64) (*image.Gray, error) {
 	py := chemPython()
 	if py == "" {
 		return nil, fmt.Errorf("не найден Python — без него не нарисовать структуру по SMILES")
 	}
 
 	task, _ := json.Marshal(map[string]any{
-		"smiles": smiles, "w": width, "h": height, "bond": bond,
+		"smiles": smiles, "w": width, "h": height, "bond": bond, "rotate": rotate,
 	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
