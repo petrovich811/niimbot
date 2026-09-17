@@ -884,3 +884,129 @@ func TestRenderTemplateLineHeight(t *testing.T) {
 			dense, sparse)
 	}
 }
+
+// --- линии, рамки, поворот ---
+
+// Линия — залитая полоса: краска только внутри её прямоугольника.
+func TestRenderTemplateLine(t *testing.T) {
+	img, err := RenderTemplate(LabelTemplate{
+		LengthMM: 30,
+		Elements: []Element{{Kind: "line", X: 2, Y: 5, W: 20, H: 0.5}},
+	}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	minX, maxX := inkColumns(img)
+	minY, maxY := inkRows(img)
+	// 2 мм = 16 точек, 22 мм = 176; 5 мм = 40, 5,5 мм = 44.
+	if minX < 15 || minX > 17 {
+		t.Fatalf("линия начинается на %d, ожидалось 16", minX)
+	}
+	if maxX < 174 || maxX > 178 {
+		t.Fatalf("линия кончается на %d, ожидалось около 176", maxX)
+	}
+	if minY < 39 || maxY > 45 {
+		t.Fatalf("линия по высоте %d..%d, ожидалось 40..44", minY, maxY)
+	}
+}
+
+// Рамка: краска по четырём сторонам, а середина пустая.
+func TestRenderTemplateFrame(t *testing.T) {
+	img, err := RenderTemplate(LabelTemplate{
+		LengthMM: 30,
+		Elements: []Element{{Kind: "frame", X: 1, Y: 1, W: 28, H: 10, Thickness: 0.4}},
+	}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Середина этикетки должна быть чистой.
+	cx, cy := img.Bounds().Dx()/2, img.Bounds().Dy()/2
+	if !isWhitePixel(img, cx, cy) {
+		t.Fatal("внутри рамки есть краска")
+	}
+	// Стороны — на месте: верх, низ, лево, право.
+	if !hasInkAt(img, cx, 8) {
+		t.Fatal("верхняя сторона рамки не найдена")
+	}
+	if !hasInkAt(img, cx, img.Bounds().Dy()-9) {
+		t.Fatal("нижняя сторона рамки не найдена")
+	}
+	if !hasInkAt(img, 8, cy) {
+		t.Fatal("левая сторона рамки не найдена")
+	}
+	if !hasInkAt(img, img.Bounds().Dx()-9, cy) {
+		t.Fatal("правая сторона рамки не найдена")
+	}
+}
+
+func hasInkAt(g *image.Gray, x, y int) bool {
+	for dy := -2; dy <= 2; dy++ {
+		for dx := -2; dx <= 2; dx++ {
+			px, py := x+dx, y+dy
+			if px < 0 || py < 0 || px >= g.Bounds().Dx() || py >= g.Bounds().Dy() {
+				continue
+			}
+			if g.GrayAt(px, py).Y < 128 {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// Поворот на 90° меняет местами ширину и высоту блока надписи.
+func TestRenderTemplateRotate(t *testing.T) {
+	// Короткое слово: без поворота блок шире, чем выше.
+	word := "ШИРЕ"
+	base, err := RenderTemplate(LabelTemplate{
+		LengthMM: 30,
+		Elements: []Element{{Kind: "text", X: 2, Y: 2, Text: word, FontMM: 3}},
+	}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bMinX, bMaxX := inkColumns(base)
+	bMinY, bMaxY := inkRows(base)
+	baseW, baseH := bMaxX-bMinX, bMaxY-bMinY
+
+	rot, err := RenderTemplate(LabelTemplate{
+		LengthMM: 30,
+		Elements: []Element{{Kind: "text", X: 2, Y: 2, Text: word, FontMM: 3, Rotate: 90}},
+	}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rMinX, rMaxX := inkColumns(rot)
+	rMinY, rMaxY := inkRows(rot)
+	rotW, rotH := rMaxX-rMinX, rMaxY-rMinY
+
+	if baseW <= baseH {
+		t.Fatalf("исходная надпись не шире, чем выше: %dx%d", baseW, baseH)
+	}
+	if rotH <= rotW {
+		t.Fatalf("после поворота блок не стал выше, чем шире: %dx%d", rotW, rotH)
+	}
+	// Размеры должны поменяться местами (с точностью до пары точек).
+	if abs(rotW-baseH) > 3 || abs(rotH-baseW) > 3 {
+		t.Fatalf("поворот не swapped: было %dx%d, стало %dx%d", baseW, baseH, rotW, rotH)
+	}
+}
+
+func abs(v int) int {
+	if v < 0 {
+		return -v
+	}
+	return v
+}
+
+// У линий и рамок без размеров — понятная ошибка.
+func TestRenderTemplateShapeErrors(t *testing.T) {
+	for _, el := range []Element{
+		{Kind: "line", X: 1, Y: 1},
+		{Kind: "frame", X: 1, Y: 1},
+	} {
+		if _, err := RenderTemplate(LabelTemplate{LengthMM: 30, Elements: []Element{el}}, nil); err == nil {
+			t.Fatalf("%s без размеров: ожидалась ошибка", el.Kind)
+		}
+	}
+}

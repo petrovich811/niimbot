@@ -28,11 +28,11 @@ import (
 
 // Element — элемент этикетки: надпись или картинка.
 type Element struct {
-	Kind string  `json:"kind"`        // "text" или "image"
+	Kind string  `json:"kind"`        // text | image | line | frame
 	X    float64 `json:"x"`           // мм вдоль этикетки
 	Y    float64 `json:"y"`           // мм поперёк этикетки
-	W    float64 `json:"w,omitempty"` // мм: ширина рамки (для выравнивания и картинок)
-	H    float64 `json:"h,omitempty"` // мм: высота (для картинок)
+	W    float64 `json:"w,omitempty"` // мм: ширина элемента
+	H    float64 `json:"h,omitempty"` // мм: высота элемента
 
 	// Надпись
 	Text   string  `json:"text,omitempty"`
@@ -40,7 +40,11 @@ type Element struct {
 	LineMM float64 `json:"line,omitempty"`   // высота строки в мм; 0 — по шрифту
 	Family string  `json:"family,omitempty"` // семейство шрифта; пусто — по умолчанию
 	Bold   bool    `json:"bold,omitempty"`   // жирное начертание
+	Rotate int     `json:"rotate,omitempty"` // поворот: 0, 90, 180 или 270
 	Align  string  `json:"align,omitempty"`  // left | center | right (внутри рамки X..X+W)
+
+	// Рамка: толщина линий в мм (по умолчанию 0,3)
+	Thickness float64 `json:"thickness,omitempty"`
 
 	// Картинка: путь к файлу или data:URL с base64
 	Image string `json:"image,omitempty"`
@@ -68,6 +72,10 @@ func RenderTemplate(tpl LabelTemplate, row []string) (*image.Gray, error) {
 			err = drawTextElement(img, el, row)
 		case "image":
 			err = drawImageElement(img, el)
+		case "line":
+			err = drawLineElement(img, el)
+		case "frame":
+			err = drawFrameElement(img, el)
 		case "":
 			err = fmt.Errorf("у элемента %d не указан вид (kind)", i+1)
 		default:
@@ -121,10 +129,59 @@ func drawTextElement(img *image.Gray, el Element, row []string) error {
 	y0 := int(math.Round(el.Y * dotsPerMM))
 	boxW := int(math.Round(el.W * dotsPerMM))
 
+	// Поворот: надпись рисуется на отдельном холсте и поворачивается целиком.
+	// Так текст идёт поперёк этикетки — нужно для кабельных бирок.
+	if angle := ((el.Rotate % 360) + 360) % 360; angle != 0 {
+		blockW, blockH := 0, lineH*len(lines)
+		for _, line := range lines {
+			if w := font.MeasureString(face, line).Ceil(); w > blockW {
+				blockW = w
+			}
+		}
+		if blockW < 1 {
+			blockW = 1
+		}
+		tmp := whiteCanvas(blockW, blockH)
+		drawTextLines(tmp, face, lines, 0, 0, lineH, blockW, ascent, "left", 0)
+		rot := rotateGray(tmp, angle)
+
+		// Выравнивание считаем по повёрнутому блоку.
+		rw, rh := rot.Bounds().Dx(), rot.Bounds().Dy()
+		px := x0
+		switch strings.ToLower(el.Align) {
+		case "center":
+			if boxW > 0 {
+				px = x0 + (boxW-rw)/2
+			} else {
+				px = x0 - rw/2
+			}
+		case "right":
+			if boxW > 0 {
+				px = x0 + boxW - rw
+			} else {
+				px = x0 - rw
+			}
+		}
+		draw.Draw(img, image.Rect(px, y0, px+rw, y0+rh), rot, image.Point{}, draw.Src)
+		return nil
+	}
+
+	drawTextLines(img, face, lines, x0, y0, lineH, boxW, ascent, el.Align, 1)
+	return nil
+}
+
+// drawTextLines рисует строки надписи с выравниванием внутри рамки boxW.
+// step — шаг между строками в единицах lineH (нужен, когда строка одна
+// и рисовать её надо на своём холсте).
+func drawTextLines(dst *image.Gray, face font.Face, lines []string,
+	x0, y0, lineH, boxW, ascent int, align string, step int) {
+	if step < 1 {
+		step = 1
+	}
 	for i, line := range lines {
 		lineW := font.MeasureString(face, line).Ceil()
 		x := x0
-		switch strings.ToLower(el.Align) {
+		switch strings.ToLower(align) {
 		case "center":
 			if boxW > 0 {
 				x = x0 + (boxW-lineW)/2
@@ -138,16 +195,104 @@ func drawTextElement(img *image.Gray, el Element, row []string) error {
 				x = x0 - lineW
 			}
 		}
-		y := y0 + ascent + i*lineH
+		y := y0 + ascent + i*lineH*step
 		d := &font.Drawer{
-			Dst:  img,
+			Dst:  dst,
 			Src:  image.NewUniform(color.Black),
 			Face: face,
 			Dot:  fixed.P(x, y),
 		}
 		d.DrawString(line)
 	}
+}
+
+// mmToDots переводит миллиметры в точки печати.
+func mmToDots(mm float64) int {
+	return int(math.Round(mm * dotsPerMM))
+}
+
+// mmToDotsMin переводит миллиметры в точки, но не меньше одной:
+// тонкая рамка 0,2 мм должна остаться видимой.
+func mmToDotsMin(mm float64) int {
+	n := mmToDots(mm)
+	if n < 1 {
+		n = 1
+	}
+	return n
+}
+
+// fillRect заливает прямоугольник чёрным, обрезая по краям холста.
+func fillRect(img *image.Gray, x, y, w, h int) {
+	r := image.Rect(x, y, x+w, y+h).Intersect(img.Bounds())
+	if r.Empty() {
+		return
+	}
+	draw.Draw(img, r, image.NewUniform(color.Black), image.Point{}, draw.Src)
+}
+
+// drawLineElement рисует залитый прямоугольник: разделитель между строками
+// или сплошную плашку. Тонкая линия — это тот же прямоугольник с малой высотой.
+func drawLineElement(img *image.Gray, el Element) error {
+	w, h := mmToDotsMin(el.W), mmToDotsMin(el.H)
+	if el.W <= 0 || el.H <= 0 {
+		return fmt.Errorf("у линии не заданы размеры (w и h в мм)")
+	}
+	fillRect(img, mmToDots(el.X), mmToDots(el.Y), w, h)
 	return nil
+}
+
+// drawFrameElement рисует рамку: четыре полосы по сторонам прямоугольника.
+func drawFrameElement(img *image.Gray, el Element) error {
+	if el.W <= 0 || el.H <= 0 {
+		return fmt.Errorf("у рамки не заданы размеры (w и h в мм)")
+	}
+	t := el.Thickness
+	if t <= 0 {
+		t = 0.3
+	}
+	x, y := mmToDots(el.X), mmToDots(el.Y)
+	w, h, tw := mmToDots(el.W), mmToDots(el.H), mmToDotsMin(t)
+
+	fillRect(img, x, y, w, tw)      // верх
+	fillRect(img, x, y+h-tw, w, tw) // низ
+	fillRect(img, x, y, tw, h)      // левая
+	fillRect(img, x+w-tw, y, tw, h) // правая
+	return nil
+}
+
+// rotateGray поворачивает изображение на 90, 180 или 270 градусов.
+func rotateGray(src *image.Gray, angle int) *image.Gray {
+	b := src.Bounds()
+	w, h := b.Dx(), b.Dy()
+	switch ((angle % 360) + 360) % 360 {
+	case 90:
+		dst := image.NewGray(image.Rect(0, 0, h, w))
+		for y := 0; y < h; y++ {
+			for x := 0; x < w; x++ {
+				// по часовой стрелке
+				dst.SetGray(h-1-y, x, src.GrayAt(x, y))
+			}
+		}
+		return dst
+	case 180:
+		dst := image.NewGray(image.Rect(0, 0, w, h))
+		for y := 0; y < h; y++ {
+			for x := 0; x < w; x++ {
+				dst.SetGray(w-1-x, h-1-y, src.GrayAt(x, y))
+			}
+		}
+		return dst
+	case 270:
+		dst := image.NewGray(image.Rect(0, 0, h, w))
+		for y := 0; y < h; y++ {
+			for x := 0; x < w; x++ {
+				dst.SetGray(y, w-1-x, src.GrayAt(x, y))
+			}
+		}
+		return dst
+	default:
+		return src
+	}
 }
 
 // pickFont выбирает файл шрифта для элемента.

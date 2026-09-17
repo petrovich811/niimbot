@@ -25,6 +25,8 @@
     <div class="row toolbar">
       <button id="add-text" class="ghost">+ Надпись</button>
       <button id="add-image" class="ghost">+ Картинка</button>
+      <button id="add-line" class="ghost">+ Линия</button>
+      <button id="add-frame" class="ghost">+ Рамка</button>
       <input type="file" id="image-file" accept="image/*" hidden>
       <button id="del-el" class="ghost danger">Удалить</button>
       <label class="check"><input type="checkbox" id="grid" checked> сетка 1 мм</label>
@@ -40,8 +42,8 @@
       </div>
       <div class="ruler-x"></div>
     </div>
-    <p class="hint">Тяните элемент мышью — координаты прилипают к сетке 0,5 мм.
-      <code>{1}</code>, <code>{2}</code>… — столбцы строки данных.</p>
+    <p class="hint">Тяните элемент мышью: координаты прилипают к сетке 0,5 мм, а у краёв
+      и середины этикетки — к ним. <code>{1}</code>, <code>{2}</code>… — столбцы строки данных.</p>
 
     <h2>Что уйдёт на печать</h2>
     <div class="real-preview">
@@ -86,7 +88,25 @@
             </select>
           </label>
           <label class="check"><input type="checkbox" id="p-bold"> Жирный</label>
+          <label>Поворот
+            <select id="p-rotate">
+              <option value="0">0° — вдоль этикетки</option>
+              <option value="90">90° — поперёк</option>
+              <option value="180">180°</option>
+              <option value="270">270° — поперёк, обратно</option>
+            </select>
+          </label>
         </div>
+        <p class="hint">Значения 90° и 270° пригодятся для кабельных бирок: текст идёт поперёк этикетки.</p>
+      </div>
+
+      <div id="shape-props">
+        <div class="grid">
+          <label>Толщина, мм <input type="number" id="p-thickness" step="0.1" min="0.1" max="3">
+            <small>только для рамки</small>
+          </label>
+        </div>
+        <p class="hint">Линия — сплошная полоса (разделитель или плашка). Рамка — контур по краям.</p>
       </div>
       <div id="image-props">
         <label>Картинка <input type="file" id="p-image-file" accept="image/*"></label>

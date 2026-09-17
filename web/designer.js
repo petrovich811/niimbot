@@ -65,6 +65,20 @@ function renderCanvas() {
     node.style.left = el.x * scale + 'px';
     node.style.top = el.y * scale + 'px';
 
+    if (el.kind === 'line' || el.kind === 'frame') {
+      node.style.width = (el.w || 1) * scale + 'px';
+      node.style.height = (el.h || 0.4) * scale + 'px';
+      if (el.kind === 'line') {
+        node.style.background = '#111';
+      } else {
+        node.style.background = 'none';
+        node.style.border = `${Math.max(1, (el.thickness || 0.3) * scale)}px solid #111`;
+      }
+      if (i === selected) node.classList.add('selected');
+      label.appendChild(node);
+      return;
+    }
+
     if (el.kind === 'image') {
       node.style.width = (el.w || 8) * scale + 'px';
       node.style.height = (el.h || 8) * scale + 'px';
@@ -76,19 +90,56 @@ function renderCanvas() {
         node.innerHTML = '<span class="ph">нет картинки</span>';
       }
     } else {
-      node.style.width = (el.w || labelLength()) * scale + 'px';
-      node.style.fontSize = (el.font || 2.5) * scale + 'px';
+      // Логический размер блока надписи, а затем поворот: при 90° и 270°
+      // ширина и высота на холсте меняются местами.
+      const wPx = (el.w || labelLength()) * scale;
       const lh = el.line > 0 ? el.line : (el.font || 2.5) * 1.15;
-      node.style.lineHeight = lh * scale + 'px';
-      node.style.textAlign = el.align || 'left';
-      if (el.family) node.style.fontFamily = `"${el.family}", sans-serif`;
-      node.style.fontWeight = el.bold ? '700' : '400';
-      node.textContent = el.text || '';
+      const hPx = lh * scale;
+      const rot = ((el.rotate || 0) % 360 + 360) % 360;
+      const swapped = rot === 90 || rot === 270;
+
+      node.style.width = (swapped ? hPx : wPx) + 'px';
+      node.style.height = (swapped ? wPx : hPx) + 'px';
+
+      const inner = document.createElement('div');
+      inner.className = 'txt';
+      inner.style.width = wPx + 'px';
+      inner.style.height = hPx + 'px';
+      inner.style.fontSize = (el.font || 2.5) * scale + 'px';
+      inner.style.lineHeight = hPx + 'px';
+      inner.style.textAlign = el.align || 'left';
+      inner.style.transformOrigin = 'top left';
+      if (el.family) inner.style.fontFamily = `"${el.family}", sans-serif`;
+      inner.style.fontWeight = el.bold ? '700' : '400';
+      if (rot === 90) inner.style.transform = `translate(${hPx}px, 0) rotate(90deg)`;
+      else if (rot === 180) inner.style.transform = `translate(${wPx}px, ${hPx}px) rotate(180deg)`;
+      else if (rot === 270) inner.style.transform = `translate(0, ${wPx}px) rotate(270deg)`;
+      inner.textContent = el.text || '';
+      node.textContent = '';
+      node.appendChild(inner);
     }
     label.appendChild(node);
   });
 
+  drawGuides(label);
   drawRuler();
+}
+
+// Линии-подсказки: показывают, к какому краю или середине прилип элемент.
+function drawGuides(label) {
+  [...label.querySelectorAll('.guide')].forEach((n) => n.remove());
+  const add = (style) => {
+    const g = document.createElement('div');
+    g.className = 'guide';
+    Object.assign(g.style, style);
+    label.appendChild(g);
+  };
+  if (guideX !== null) {
+    add({ left: guideX * scale + 'px', top: 0, width: '1px', height: '100%' });
+  }
+  if (guideY !== null) {
+    add({ top: guideY * scale + 'px', left: 0, height: '1px', width: '100%' });
+  }
 }
 
 function drawRuler() {
@@ -122,14 +173,24 @@ $('label').addEventListener('mousedown', (e) => {
   const move = (ev) => {
     const dx = (ev.clientX - startX) / scale;
     const dy = (ev.clientY - startY) / scale;
-    el.x = snap(Math.max(0, ox + dx));
-    el.y = snap(Math.max(0, oy + dy));
+    let nx = snap(Math.max(0, ox + dx));
+    let ny = snap(Math.max(0, oy + dy));
+    if (!ev.altKey) { // Alt отключает прилипание к краям
+      const r = snapToEdges(el, nx, ny);
+      nx = r.x; ny = r.y;
+    } else {
+      guideX = guideY = null;
+    }
+    el.x = nx;
+    el.y = ny;
     renderCanvas();
     showProps();
   };
   const up = () => {
     document.removeEventListener('mousemove', move);
     document.removeEventListener('mouseup', up);
+    guideX = guideY = null;
+    renderCanvas();
     refreshPreview();
   };
   document.addEventListener('mousemove', move);
@@ -139,6 +200,36 @@ $('label').addEventListener('mousedown', (e) => {
 
 function snap(v) {
   return Math.round(v / SNAP_MM) * SNAP_MM;
+}
+
+// Прилипание к краям и середине этикетки.
+//
+// Кроме сетки 0,5 мм элемент «притягивается» к левому краю, середине и
+// правому краю по X, и к верху, середине и низу по Y. Без этого выставить
+// элемент ровно по центру можно только на глазок.
+const SNAP_EDGE_MM = 0.6; // насколько близко надо подойти, чтобы прилипнуть
+let guideX = null, guideY = null; // линии-подсказки, мм
+
+function sizeOf(el) {
+  if (el.kind === 'text') return { w: el.w || labelLength(), h: (el.line || (el.font || 2.5) * 1.15) };
+  return { w: el.w || 0, h: el.h || 0 };
+}
+
+function snapToEdges(el, x, y) {
+  const L = labelLength(), H = LABEL_H_MM;
+  const { w, h } = sizeOf(el);
+  guideX = guideY = null;
+
+  // кандидаты для левого края: 0, по центру, вправо
+  const candX = [0, (L - w) / 2, L - w];
+  for (const c of candX) {
+    if (Math.abs(x - c) < SNAP_EDGE_MM) { x = c; guideX = c <= 0.01 ? 0 : (Math.abs(c - (L - w) / 2) < 0.01 ? L / 2 : L); break; }
+  }
+  const candY = [0, (H - h) / 2, H - h];
+  for (const c of candY) {
+    if (Math.abs(y - c) < SNAP_EDGE_MM) { y = c; guideY = c <= 0.01 ? 0 : (Math.abs(c - (H - h) / 2) < 0.01 ? H / 2 : H); break; }
+  }
+  return { x: Math.max(0, Math.min(L - w, x)), y: Math.max(0, Math.min(H - h, y)) };
 }
 
 document.addEventListener('keydown', (e) => {
@@ -187,9 +278,13 @@ function showProps() {
   $('p-bold').checked = !!el.bold;
   $('p-align').value = el.align || 'left';
 
+  $('p-rotate').value = String(el.rotate || 0);
+  $('p-thickness').value = el.thickness || 0.3;
+
   const isText = el.kind === 'text';
   $('text-props').classList.toggle('hidden', !isText);
-  $('image-props').classList.toggle('hidden', isText);
+  $('image-props').classList.toggle('hidden', el.kind !== 'image');
+  $('shape-props').classList.toggle('hidden', !(el.kind === 'line' || el.kind === 'frame'));
   $('h-wrap').classList.toggle('hidden', isText);
 }
 
@@ -211,6 +306,8 @@ bindProp('p-font', (el, v) => { el.font = Math.max(1, parseFloat(v) || 2.5); });
 bindProp('p-align', (el, v) => { el.align = v; });
 bindProp('p-family', (el, v) => { el.family = v; });
 bindProp('p-line', (el, v) => { el.line = Math.max(0, parseFloat(v) || 0); });
+bindProp('p-rotate', (el, v) => { el.rotate = parseInt(v, 10) || 0; });
+bindProp('p-thickness', (el, v) => { el.thickness = Math.max(0.05, parseFloat(v) || 0.3); });
 $('p-bold').addEventListener('change', () => {
   if (selected < 0) return;
   elements[selected].bold = $('p-bold').checked;
@@ -245,6 +342,18 @@ $('add-text').onclick = () => {
 };
 
 $('add-image').onclick = () => $('image-file').click();
+
+$('add-line').onclick = () => {
+  elements.push({ kind: 'line', x: 1, y: 5.7, w: labelLength() - 2, h: 0.4 });
+  select(elements.length - 1);
+  refreshPreview();
+};
+
+$('add-frame').onclick = () => {
+  elements.push({ kind: 'frame', x: 0.4, y: 0.4, w: labelLength() - 0.8, h: 11.2, thickness: 0.4 });
+  select(elements.length - 1);
+  refreshPreview();
+};
 
 $('image-file').addEventListener('change', (e) => {
   const file = e.target.files[0];
