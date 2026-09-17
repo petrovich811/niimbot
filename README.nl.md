@@ -301,6 +301,19 @@ een CSV met de kolommen: naam;CAS;SMILES;noot. De structuur komt uit kolom 3, de
 uit kolom 1 (vet), CAS uit kolom 2 (altijd), de noot uit kolom 4, en datum en tijd
 worden bij het printen ingevuld.
 
+### Zwart-witdrempel
+
+De printer print **alleen zwart en wit**, dus een grijs beeld wordt vóór verzending
+met een drempel omgezet: alles donkerder dan de drempel wordt zwart. De standaard is
+**200** van 255. Lijnen en tekst worden met anti-aliasing getekend en hun randen zijn
+lichtgrijs; bij drempel 128 kwamen bindingen als **stippellijn** uit en vielen cijfers
+in een CAS-nummer uiteen. Gecontroleerd op papier: 128 breekt af, **200** geeft
+dichte lijnen, 230 en hoger laat letters dichtlopen.
+
+In te stellen met de vlag `--threshold`, het veld «Zwart-witdrempel» in de ontwerper en
+het veld `threshold` in `/api/preview` en `/api/print`. **Het proefontwerp wordt nu al
+zwart-wit getoond** — precies wat naar de printer gaat.
+
 ### Printdatum en -tijd
 
 Elk tekstelement aanvaardt velden die **op het moment van printen** worden ingevuld:

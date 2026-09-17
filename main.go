@@ -43,6 +43,7 @@ var (
 	density   = flagSet.Int("density", 2, "плотность 1..3")
 	label     = flagSet.String("label", "", "тип этикетки; пусто — определить по метке рулона")
 	copies    = flagSet.Int("copies", 1, "количество копий")
+	threshold = flagSet.Int("threshold", 200, "порог чёрно-белого, 0..255; больше — жирнее")
 	imageFile = flagSet.String("file", "", "файл картинки для макета (команда preview)")
 	port      = flagSet.Int("port", 8765, "порт веб-интерфейса (команда gui); 8080 занят SearXNG")
 	noBrowser = flagSet.Bool("no-browser", false, "не открывать браузер (команда gui)")
@@ -67,6 +68,10 @@ func main() {
 	if err := flagSet.Parse(flagArgs); err != nil {
 		fatal(err)
 	}
+	if *threshold < 1 || *threshold > 255 {
+		fatal(fmt.Errorf("порог должен быть от 1 до 255, а не %d", *threshold))
+	}
+	binarizeThreshold = uint8(*threshold)
 
 	// Тип этикетки проверяем ДО подключения: незачем будить принтер,
 	// если задача заведомо невыполнима.
@@ -408,7 +413,7 @@ func savePreview(img *image.Gray) {
 		return
 	}
 	defer f.Close()
-	if err := png.Encode(f, img); err != nil {
+	if err := png.Encode(f, Binarize(img)); err != nil {
 		return
 	}
 	b := img.Bounds()

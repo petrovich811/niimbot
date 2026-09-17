@@ -34,6 +34,36 @@ import (
 
 const feedMargin = 6 // отступ в точках
 
+// binarizeThreshold — порог перевода в чёрно-белое, 0..255.
+//
+// Всё, что темнее порога, становится чёрным. По умолчанию 200, а не 128:
+// линии и текст рисуются со сглаживанием, их края светло-серые, и при пороге
+// 128 связи структур рвутся пунктиром, а цифры рассыпаются на точки —
+// проверено на живом принтере. При 200 тонкие элементы выходят плотными.
+// Выше 230 буквы начинают заплывать.
+var binarizeThreshold uint8 = 200
+
+// Binarize переводит изображение в чёрно-белое тем же порогом, что идёт
+// в принтер. Нужен, чтобы макет показывал ровно то, что напечатается.
+func Binarize(img *image.Gray) *image.Gray {
+	return BinarizeAt(img, binarizeThreshold)
+}
+
+// BinarizeAt — то же с явным порогом.
+func BinarizeAt(img *image.Gray, threshold uint8) *image.Gray {
+	out := image.NewGray(img.Bounds())
+	for y := img.Bounds().Min.Y; y < img.Bounds().Max.Y; y++ {
+		for x := img.Bounds().Min.X; x < img.Bounds().Max.X; x++ {
+			if img.GrayAt(x, y).Y < threshold {
+				out.SetGray(x, y, color.Gray{Y: 0})
+			} else {
+				out.SetGray(x, y, color.Gray{Y: 255})
+			}
+		}
+	}
+	return out
+}
+
 // fontCandidates — шрифты с кириллицей для трёх систем.
 // Жирные варианты идут первыми: на этикетке мелкий текст читается лучше.
 var fontCandidates = []string{
@@ -183,6 +213,11 @@ type Row []byte
 // flip переворачивает содержимое на 180° — на случай, если этикетка
 // выходит «вверх ногами» при том же направлении подачи.
 func ImageToRows(img *image.Gray, flip bool) []Row {
+	return ImageToRowsAt(img, flip, binarizeThreshold)
+}
+
+// ImageToRowsAt — то же, но с явным порогом: у разных этикеток он бывает свой.
+func ImageToRowsAt(img *image.Gray, flip bool, threshold uint8) []Row {
 	b := img.Bounds()
 	feedLen := b.Dx() // строк подачи
 	across := b.Dy()  // точек поперёк головки
@@ -203,7 +238,7 @@ func ImageToRows(img *image.Gray, flip bool) []Row {
 				x = feedLen - 1 - r
 				y = c
 			}
-			if img.GrayAt(b.Min.X+x, b.Min.Y+y).Y < 128 {
+			if img.GrayAt(b.Min.X+x, b.Min.Y+y).Y < threshold {
 				row[c/8] |= 1 << (7 - uint(c%8))
 				blank = false
 			}

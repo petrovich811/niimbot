@@ -208,16 +208,17 @@ func apiStatus(address string) (map[string]any, error) {
 
 // printRequest — тело запросов на печать.
 type printRequest struct {
-	Items    []string  `json:"items"`    // строки данных: одна запись на этикетку
-	Template string    `json:"template"` // шаблон этикетки с {1}, {2}… (необязательно)
-	Elements []Element `json:"elements"` // шаблон из конструктора (важнее Template)
-	Length   float64   `json:"length"`
-	Font     float64   `json:"font"`
-	Density  int       `json:"density"`
-	Label    string    `json:"label"`
-	Copies   int       `json:"copies"`
-	Flip     bool      `json:"flip"`
-	Address  string    `json:"address"`
+	Items     []string  `json:"items"`    // строки данных: одна запись на этикетку
+	Template  string    `json:"template"` // шаблон этикетки с {1}, {2}… (необязательно)
+	Elements  []Element `json:"elements"` // шаблон из конструктора (важнее Template)
+	Length    float64   `json:"length"`
+	Font      float64   `json:"font"`
+	Density   int       `json:"density"`
+	Label     string    `json:"label"`
+	Copies    int       `json:"copies"`
+	Flip      bool      `json:"flip"`
+	Threshold int       `json:"threshold"` // порог чёрно-белого, 0..255; 0 — по умолчанию
+	Address   string    `json:"address"`
 }
 
 // splitFields разбирает строку данных на столбцы: ; , или табуляция.
@@ -329,9 +330,17 @@ func renderPages(req printRequest) ([][]Row, error) {
 		if img == nil {
 			continue
 		}
-		pages = append(pages, ImageToRows(img, req.Flip))
+		pages = append(pages, ImageToRowsAt(img, req.Flip, req.threshold()))
 	}
 	return pages, nil
+}
+
+// threshold возвращает порог для запроса: свой или общий по умолчанию.
+func (r printRequest) threshold() uint8 {
+	if r.Threshold >= 1 && r.Threshold <= 255 {
+		return uint8(r.Threshold)
+	}
+	return binarizeThreshold
 }
 
 // renderOne готовит одну этикетку: по шаблону конструктора, если он задан,
@@ -437,7 +446,8 @@ func apiPreview(w http.ResponseWriter, req printRequest) {
 	}
 	w.Header().Set("Content-Type", "image/png")
 	w.Header().Set("Cache-Control", "no-store")
-	png.Encode(w, img)
+	// Отдаём то же, что уйдёт в принтер: чёрно-белое, а не серое.
+	png.Encode(w, BinarizeAt(img, req.threshold()))
 }
 
 // --------------------------------------------------------------------------

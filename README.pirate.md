@@ -300,6 +300,19 @@ with the columns name;CAS;SMILES;note. The structure comes from column 3, the na
 column 1 (bold), CAS from column 2 (always), the note from column 4, an' date an' time
 be filled at printin'.
 
+### The Black-an'-White Threshold
+
+The printer prints **black an' white only**, so a grey picture be turned by a
+threshold afore sendin': whatever be darker than the threshold turns black. The
+default be **200** of 255. Lines an' words be drawn with anti-aliasin' an' their edges
+be light grey; at a threshold of 128 the bonds came out **dotted** an' digits in a CAS
+number fell to specks. Checked on paper: 128 breaks, **200** gives solid lines, 230
+an' up lets letters run together.
+
+Set her with the `--threshold` flag, the «Black-an'-white threshold» field in the
+draughtsman, or the `threshold` field in `/api/preview` an' `/api/print`. **The
+mock-up now shows black an' white already** — just what goes to the printer.
+
 ### Printin' the Date an' Time
 
 Any text element takes fields filled **at the moment o' printin'**:

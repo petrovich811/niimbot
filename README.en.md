@@ -330,6 +330,29 @@ The settings hold a template named **"Парфюмерные ингредиен�
 | note | column 4 |
 | date and time | substituted while printing |
 
+### Black-and-white threshold
+
+The printer prints **black and white only**, so a grey image is converted by a
+threshold before sending: anything darker than the threshold becomes black.
+
+The default is **200** out of 255, and that matters more than it seems. Lines and text
+are drawn with anti-aliasing and their edges are light grey; at a threshold of 128 the
+bonds of a structure came out **dotted** and the digits in a CAS number fell apart into
+specks. Verified on paper:
+
+| Threshold | What comes out |
+|---|---|
+| 128 | bonds break, small text falls apart |
+| **200** | solid lines, whole text — the default |
+| 230 and up | letters start to fill in |
+
+Three ways to change it: the `--threshold 1..255` flag, the "Black-and-white threshold"
+field in the designer, and the `threshold` field in `/api/preview` and `/api/print`.
+
+**The designer's mock-up is now shown already in black and white** — exactly what goes
+to the printer, instead of the grey version as before. Faint lines are therefore
+visible before printing.
+
 ### Print date and time
 
 Any text element accepts fields substituted **at printing time**:

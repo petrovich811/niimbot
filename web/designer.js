@@ -433,6 +433,7 @@ function requestBody() {
     density: parseInt($('density').value, 10) || 2,
     label: $('label').value,
     copies: parseInt($('copies').value, 10) || 1,
+    threshold: parseInt($('threshold').value, 10) || 200,
     flip: $('flip').checked,
   };
 }
@@ -584,6 +585,7 @@ $('templates').addEventListener('change', (e) => {
   if (t.density) $('density').value = t.density;
   if (t.label !== undefined) $('label').value = t.label;
   if (t.copies) $('copies').value = t.copies;
+  if (t.threshold) $('threshold').value = t.threshold;
   $('flip').checked = !!t.flip;
   select(-1);
   refreshPreview();
@@ -598,6 +600,7 @@ $('tpl-save').onclick = async () => {
     density: parseInt($('density').value, 10) || 2,
     label: $('label').value,
     copies: parseInt($('copies').value, 10) || 1,
+    threshold: parseInt($('threshold').value, 10) || 200,
     flip: $('flip').checked,
     elements: elements,
   };
