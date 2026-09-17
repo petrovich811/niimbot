@@ -11,6 +11,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 )
 
 // Пакет рукопожатия, снятый с живого принтера N1:
@@ -1008,5 +1009,124 @@ func TestRenderTemplateShapeErrors(t *testing.T) {
 		if _, err := RenderTemplate(LabelTemplate{LengthMM: 30, Elements: []Element{el}}, nil); err == nil {
 			t.Fatalf("%s без размеров: ожидалась ошибка", el.Kind)
 		}
+	}
+}
+
+// --- дата, время и структуры ---
+
+func TestSubstituteDateTime(t *testing.T) {
+	when := time.Date(2026, 9, 18, 0, 25, 0, 0, time.Local)
+	cases := map[string]string{
+		"дата {дата}":          "дата 18.09.2026",
+		"время {время}":        "время 00:25",
+		"сделано {дата-время}": "сделано 18.09.2026 00:25",
+		"{дата} в {время}":     "18.09.2026 в 00:25",
+		"{ДАТА}":               "18.09.2026", // регистр не важен
+		"без подстановок":      "без подстановок",
+	}
+	for in, want := range cases {
+		got, err := substituteFields(in, nil, when)
+		if err != nil {
+			t.Fatalf("%q: %v", in, err)
+		}
+		if got != want {
+			t.Fatalf("%q → %q, ожидалось %q", in, got, want)
+		}
+	}
+}
+
+// Дата и время на этикетке действительно появляются.
+func TestRenderTemplateDateTime(t *testing.T) {
+	when := time.Date(2026, 9, 18, 0, 25, 0, 0, time.Local)
+	img, err := RenderTemplateAt(LabelTemplate{
+		LengthMM: 30,
+		Elements: []Element{
+			{Kind: "text", X: 1, Y: 1, W: 28, Text: "{дата-время}", FontMM: 2},
+		},
+	}, nil, when)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if minX, _ := inkColumns(img); minX < 0 {
+		t.Fatal("дата со временем не напечатались")
+	}
+}
+
+// Структура по SMILES. Если RDKit не установлен — тест пропускается,
+// чтобы сборка не зависела от химического окружения.
+func TestRenderSmiles(t *testing.T) {
+	if !ChemAvailable() {
+		t.Skip("RDKit не установлен — пропускаю")
+	}
+	st, err := RenderSmiles("CC(=CCCC(C)(C=C)O)C", 96, 96, 2)
+	if err != nil {
+		t.Fatalf("структура не нарисована: %v", err)
+	}
+	if st.Bounds().Dx() != 96 || st.Bounds().Dy() != 96 {
+		t.Fatalf("размер структуры %v, ожидалось 96x96", st.Bounds())
+	}
+	// Структура должна быть нарисована, а не пустая.
+	dark := 0
+	for y := 0; y < 96; y++ {
+		for x := 0; x < 96; x++ {
+			if st.GrayAt(x, y).Y < 128 {
+				dark++
+			}
+		}
+	}
+	if dark < 50 {
+		t.Fatalf("на структуре всего %d тёмных точек — похоже, пусто", dark)
+	}
+
+	// Повторный вызов берётся из кэша и даёт тот же результат.
+	again, err := RenderSmiles("CC(=CCCC(C)(C=C)O)C", 96, 96, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if again != st {
+		t.Fatal("повторный вызов не попал в кэш")
+	}
+}
+
+// Мусорная строка SMILES — понятная ошибка, а не пустая этикетка.
+func TestRenderSmilesBadInput(t *testing.T) {
+	if !ChemAvailable() {
+		t.Skip("RDKit не установлен — пропускаю")
+	}
+	if _, err := RenderSmiles("это не молекула", 96, 96, 2); err == nil {
+		t.Fatal("ожидалась ошибка разбора SMILES")
+	}
+	if _, err := RenderSmiles("   ", 96, 96, 2); err == nil {
+		t.Fatal("пустая строка SMILES должна давать ошибку")
+	}
+}
+
+// Элемент-структура в шаблоне: SMILES можно брать из данных.
+func TestRenderTemplateSmilesElement(t *testing.T) {
+	if !ChemAvailable() {
+		t.Skip("RDKit не установлен — пропускаю")
+	}
+	img, err := RenderTemplate(LabelTemplate{
+		LengthMM: 30,
+		Elements: []Element{
+			{Kind: "smiles", X: 0.5, Y: 1.5, W: 9, H: 9, Smiles: "{1}"},
+			{Kind: "text", X: 10, Y: 1, W: 19, Text: "ЛИНАЛООЛ", FontMM: 2.4},
+		},
+	}, []string{"CC(=CCCC(C)(C=C)O)C"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Структура слева, текст справа.
+	left, _ := inkColumns(img)
+	if left < 2 || left > 8 {
+		t.Fatalf("структура начинается на %d, ожидалось около 4 (0,5 мм)", left)
+	}
+	// У структуры без размеров — понятная ошибка.
+	_, err = RenderTemplate(LabelTemplate{
+		LengthMM: 30,
+		Elements: []Element{{Kind: "smiles", X: 1, Y: 1, Smiles: "CCO"}},
+	}, nil)
+	if err == nil {
+		t.Fatal("структура без размеров: ожидалась ошибка")
 	}
 }

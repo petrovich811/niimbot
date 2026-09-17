@@ -499,6 +499,11 @@ func startGUI(address string, port int, openBrowserFlag, verbose bool) error {
 		}
 	})
 
+	// Готов ли RDKit: конструктор предупреждает, если структур не будет.
+	mux.HandleFunc("/api/chem", func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, map[string]any{"available": ChemAvailable()})
+	})
+
 	// Список системных шрифтов для конструктора.
 	mux.HandleFunc("/api/fonts", func(w http.ResponseWriter, r *http.Request) {
 		families := fontFamiliesForPicker()

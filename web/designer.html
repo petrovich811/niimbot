@@ -27,6 +27,8 @@
       <button id="add-image" class="ghost">+ Картинка</button>
       <button id="add-line" class="ghost">+ Линия</button>
       <button id="add-frame" class="ghost">+ Рамка</button>
+      <button id="add-smiles" class="ghost">+ Структура</button>
+      <button id="add-stamp" class="ghost">+ Дата и время</button>
       <input type="file" id="image-file" accept="image/*" hidden>
       <button id="del-el" class="ghost danger">Удалить</button>
       <label class="check"><input type="checkbox" id="grid" checked> сетка 1 мм</label>
@@ -43,7 +45,7 @@
       <div class="ruler-x"></div>
     </div>
     <p class="hint">Тяните элемент мышью: координаты прилипают к сетке 0,5 мм, а у краёв
-      и середины этикетки — к ним. <code>{1}</code>, <code>{2}</code>… — столбцы строки данных.</p>
+      и середины этикетки — к ним. Alt отключает прилипание к краям.</p>
 
     <h2>Что уйдёт на печать</h2>
     <div class="real-preview">
@@ -71,7 +73,10 @@
         <label id="h-wrap">Высота, мм <input type="number" id="p-h" step="0.5" min="0"></label>
       </div>
       <div id="text-props">
-        <label>Текст <input type="text" id="p-text"></label>
+        <label>Текст <input type="text" id="p-text">
+      <small>Поля: <code>{1}</code>, <code>{2}</code>… — столбцы данных;
+        <code>{дата}</code>, <code>{время}</code>, <code>{дата-время}</code> — момент печати</small>
+    </label>
         <label>Шрифт
           <select id="p-family"><option value="">по умолчанию</option></select>
         </label>
@@ -98,6 +103,19 @@
           </label>
         </div>
         <p class="hint">Значения 90° и 270° пригодятся для кабельных бирок: текст идёт поперёк этикетки.</p>
+      </div>
+
+      <div id="smiles-props">
+        <label>Строка SMILES
+          <input type="text" id="p-smiles" placeholder="CC(=CCCC(C)(C=C)O)C">
+          <small>Можно брать из данных: <code>{4}</code></small>
+        </label>
+        <div class="grid">
+          <label>Толщина связей <input type="number" id="p-bond" step="0.5" min="1" max="6">
+            <small>меньше 2 при 96 точках пропадает</small>
+          </label>
+        </div>
+        <p class="hint" id="chem-note">Структуры рисует RDKit — он должен быть установлен.</p>
       </div>
 
       <div id="shape-props">

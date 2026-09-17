@@ -19,7 +19,9 @@ import (
 	"image/draw"
 	"math"
 	"os"
+	"regexp"
 	"strings"
+	"time"
 
 	xdraw "golang.org/x/image/draw"
 	"golang.org/x/image/font"
@@ -43,7 +45,10 @@ type Element struct {
 	Rotate int     `json:"rotate,omitempty"` // поворот: 0, 90, 180 или 270
 	Align  string  `json:"align,omitempty"`  // left | center | right (внутри рамки X..X+W)
 
-	// Рамка: толщина линий в мм (по умолчанию 0,3)
+	// Структура: строка SMILES; может содержать поля {1}, {2}… из данных
+	Smiles string `json:"smiles,omitempty"`
+
+	// Толщина линий: для рамки — линий, для структуры — связей
 	Thickness float64 `json:"thickness,omitempty"`
 
 	// Картинка: путь к файлу или data:URL с base64
@@ -63,19 +68,27 @@ const labelHeightMM = 12.0
 //
 // row — столбцы строки данных: {1} — первый, {2} — второй и так далее.
 func RenderTemplate(tpl LabelTemplate, row []string) (*image.Gray, error) {
+	return RenderTemplateAt(tpl, row, time.Now())
+}
+
+// RenderTemplateAt — то же, но с заданным моментом времени: нужно тестам,
+// чтобы дата и время на этикетке были предсказуемы.
+func RenderTemplateAt(tpl LabelTemplate, row []string, now time.Time) (*image.Gray, error) {
 	img := NewLabelImage(tpl.LengthMM)
 
 	for i, el := range tpl.Elements {
 		var err error
 		switch el.Kind {
 		case "text":
-			err = drawTextElement(img, el, row)
+			err = drawTextElement(img, el, row, now)
 		case "image":
 			err = drawImageElement(img, el)
 		case "line":
 			err = drawLineElement(img, el)
 		case "frame":
 			err = drawFrameElement(img, el)
+		case "smiles":
+			err = drawSmilesElement(img, el, row, now)
 		case "":
 			err = fmt.Errorf("у элемента %d не указан вид (kind)", i+1)
 		default:
@@ -89,8 +102,8 @@ func RenderTemplate(tpl LabelTemplate, row []string) (*image.Gray, error) {
 }
 
 // drawTextElement рисует надпись с учётом координат, кегля и выравнивания.
-func drawTextElement(img *image.Gray, el Element, row []string) error {
-	text, err := substituteFields(el.Text, row)
+func drawTextElement(img *image.Gray, el Element, row []string, now time.Time) error {
+	text, err := substituteFields(el.Text, row, now)
 	if err != nil {
 		return err
 	}
@@ -377,11 +390,26 @@ func loadImageSource(src string) (image.Image, error) {
 	return img, nil
 }
 
-// substituteFields заменяет {1}, {2}… на столбцы строки данных.
+// Подстановки даты и времени. Порядок важен: сначала самая длинная,
+// иначе «{дата-время}» превратится в «18.09.2026-время».
+var (
+	reDateTime = regexp.MustCompile(`(?i)\{дата-время\}`)
+	reDate     = regexp.MustCompile(`(?i)\{дата\}`)
+	reTime     = regexp.MustCompile(`(?i)\{время\}`)
+)
+
+// substituteFields заменяет поля данных и дату со временем.
+//
+// Столбцы данных: {1}, {2}… Дата и время подставляются в момент печати:
+// {дата} → 18.09.2026, {время} → 00:20, {дата-время} → 18.09.2026 00:20.
 //
 // Ссылка на столбец, которого нет, — ошибка: иначе на этикетке напечаталось
 // бы литеральное «{3}», и брак был бы виден только на бумаге.
-func substituteFields(text string, row []string) (string, error) {
+func substituteFields(text string, row []string, now time.Time) (string, error) {
+	text = reDateTime.ReplaceAllString(text, now.Format("02.01.2006 15:04"))
+	text = reDate.ReplaceAllString(text, now.Format("02.01.2006"))
+	text = reTime.ReplaceAllString(text, now.Format("15:04"))
+
 	for i, v := range row {
 		text = strings.ReplaceAll(text, fmt.Sprintf("{%d}", i+1), v)
 	}
@@ -390,4 +418,27 @@ func substituteFields(text string, row []string) (string, error) {
 			"элемент использует %s, а в данных только %d столбц(а/ов)", bad, len(row))
 	}
 	return text, nil
+}
+
+// drawSmilesElement рисует химическую структуру по строке SMILES.
+func drawSmilesElement(img *image.Gray, el Element, row []string, now time.Time) error {
+	if el.W <= 0 || el.H <= 0 {
+		return fmt.Errorf("у структуры не заданы размеры (w и h в мм)")
+	}
+	smiles, err := substituteFields(el.Smiles, row, now)
+	if err != nil {
+		return err
+	}
+	bond := el.Thickness
+	if bond <= 0 {
+		bond = 2 // тонкие связи при 96 точках пропадают — проверено
+	}
+	st, err := RenderSmiles(smiles, mmToDotsMin(el.W), mmToDotsMin(el.H), bond)
+	if err != nil {
+		return err
+	}
+	x0, y0 := mmToDots(el.X), mmToDots(el.Y)
+	draw.Draw(img, image.Rect(x0, y0, x0+st.Bounds().Dx(), y0+st.Bounds().Dy()),
+		st, image.Point{}, draw.Src)
+	return nil
 }
