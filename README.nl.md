@@ -281,6 +281,26 @@ lezen in een vierkant van 96×96, grote (cholesterol, 28) alleen over de **volle
 breedte** van het etiket. Labels van heteroatomen (O, N) gaan verloren bij 8 punten
 per mm — een letter neemt ongeveer 6 punten.
 
+#### De structuur roteren
+
+Het etiket is maar 12 mm hoog, dus een vierkante structuur loopt daar tegenaan.
+Rotatie heft die grens op: het element heeft een veld `rotate`, en een geroteerde
+structuur mag de **hele lengte** van het etiket gebruiken. **RDKit roteert zelf**
+(zijn `rotate`-optie) — hij legt de molecule op de gegeven kader, in plaats van haar
+in een vierkant te passen en daarna te draaien. Rotatie werkt ook voor afbeeldingen.
+
+**Maar er is een grens, en die staat op papier.** Op een etiket van 14×30 passen een
+grote structuur en grote tekst niet samen: bij 18×11 mm geroteerd groeit de structuur,
+maar wordt de tekstkolom zo smal dat de naam wordt afgesneden. Gebleven is **15×10 mm
+structuur en 14 mm tekst** — both groot en compleet.
+
+#### Een kant-en-klaar reekssjabloon
+
+In de instellingen staat het sjabloon **«Парфюмерные ингредиенты»**. De gegevens zijn
+een CSV met de kolommen: naam;CAS;SMILES;noot. De structuur komt uit kolom 3, de naam
+uit kolom 1 (vet), CAS uit kolom 2 (altijd), de noot uit kolom 4, en datum en tijd
+worden bij het printen ingevuld.
+
 ### Printdatum en -tijd
 
 Elk tekstelement aanvaardt velden die **op het moment van printen** worden ingevuld:

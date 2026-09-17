@@ -285,6 +285,51 @@ Large molecules are saved by using the label's **full width** (230 dots instead 
 Heteroatom labels (O, N) are lost at 8 dots/mm — a letter takes about 6 dots.
 Stereochemistry (wedges) is indistinguishable at this size.
 
+#### Rotating the structure
+
+The label is only 12 mm tall, so a square structure runs into that limit. Rotation
+removes it: the element has a `rotate` field, and a rotated structure can use the
+label's **whole length**.
+
+```json
+{"kind":"smiles","x":0.3,"y":0.5,"w":18,"h":11,"smiles":"{3}","thickness":2,"rotate":90}
+```
+
+**RDKit itself rotates** (its `rotate` option), not us after drawing: it lays the
+molecule out for the box you give, instead of fitting it into a square and spinning
+it. Rotation also works for pictures.
+
+**But there is a limit, and it is on paper.** On a 14×30 label a large structure and
+large text do not fit together. Three layouts were tried:
+
+| Layout | Structure | What came out |
+|---|---|---|
+| 9.5×9.5 mm, text 18 mm | small | readable, but the structure is small |
+| 18×11 mm **rotated**, text 11 mm | large | **the name was cut off** — no room left |
+| **15×10 mm, text 14 mm** | large | both the structure and the whole text fit |
+
+The third one won. If your name is longer than "ЛИНАЛООЛ", lower the size or give the
+structure more room in the designer.
+
+#### A ready series template
+
+The settings hold a template named **"Парфюмерные ингредиенты"**. The data is a CSV:
+
+```
+название;CAS;SMILES;нота
+ЛИНАЛООЛ;78-70-6;CC(=CCCC(C)(C=C)O)C;цветочный, свежий
+КУМАРИН;91-64-5;O=c1ccc2ccccc2o1;сладкий, сенный
+ВАНИЛИН;121-33-5;COc1cc(C=O)ccc1O;ванильный, бальзамический
+```
+
+| On the label | Where from |
+|---|---|
+| structure | column 3 (SMILES) |
+| name | column 1, in bold |
+| CAS | column 2, always |
+| note | column 4 |
+| date and time | substituted while printing |
+
 ### Print date and time
 
 Any text element accepts fields substituted **at printing time**:

@@ -280,6 +280,26 @@ Checked: small molecules (9–15 heavy atoms) read in a 96×96 square, big ones
 (cholesterol, 28) only across the label's **whole width**. Heteroatom labels (O, N) be
 lost at 8 dots to the millimetre — a letter takes some 6 dots.
 
+#### Turnin' the Structure
+
+The label be but 12 mm tall, so a square structure runs aground on that. Turnin'
+lifts the limit: the element has a `rotate` field, an' a turned structure may use the
+label's **whole length**. **RDKit turns her himself** (his `rotate` option) — he lays
+the molecule out for the box ye give, instead of fittin' her into a square an' spinnin'
+her after. Turnin' works fer pictures too.
+
+**But there be a limit, an' it stands on paper.** On a 14×30 label a big structure an'
+big words do not fit together: at 18×11 mm turned the structure grows, but the word
+column narrows so far that the name be cut off. We settled on **15×10 mm structure an'
+14 mm of words** — the structure big an' the words whole.
+
+#### A Ready Fleet Template
+
+The settings hold a template named **«Парфюмерные ингредиенты»**. The cargo be a CSV
+with the columns name;CAS;SMILES;note. The structure comes from column 3, the name from
+column 1 (bold), CAS from column 2 (always), the note from column 4, an' date an' time
+be filled at printin'.
+
 ### Printin' the Date an' Time
 
 Any text element takes fields filled **at the moment o' printin'**:
