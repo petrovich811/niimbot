@@ -473,6 +473,10 @@ way rows lie an' the white canvas behind 'em.
   (`4, 1, 2, 5`), an' a column left out never reaches the label;
 - **an empty column keeps an empty line** — every label in the fleet has the same
   number of lines an' the layout holds her course;
+- **the label draughtsman** — a fleet built from placed elements printed: words land
+  at their coordinates an' the alignin' works;
+- **font an' line height** — four fonts (Arial, Times New Roman, Comic Sans MS,
+  DejaVu Sans) be told apart on paper, an' a 4 mm line height spreads the lines plain;
 - **a picture drawn at the label's own size be crisper** than the same picture
   shrunk from a great canvas. Compared on paper: 240×96 against 900×360 — the
   first be plainly better. So «draw at that size» be no fussiness, it follows

@@ -473,6 +473,11 @@ and the white canvas background.
   (`4, 1, 2, 5`), and a column left out never reaches the label;
 - **an empty column keeps an empty line** — every label in the series has the same
   number of lines and the layout does not shift;
+- **the label designer** — a series built from placed elements printed: text lands at
+  its coordinates and alignment works;
+- **font and line height** — four fonts (Arial, Times New Roman, Comic Sans MS,
+  DejaVu Sans) are distinguishable on paper, and a 4 mm line height visibly spreads
+  the lines;
 - **a picture drawn at the label's own size is crisper** than the same picture
   shrunk from a large canvas. Compared on paper: 240×96 against 900×360 — the
   first is clearly better. So "draw at that size" is not fussiness, it follows

@@ -475,6 +475,11 @@ pakketten, de punttellers, de oriëntatie van regels en de witte achtergrond.
   (`4, 1, 2, 5`), en een weggelaten kolom komt niet op het etiket;
 - **een lege kolom houdt een lege regel** — elk etiket in de reeks heeft evenveel
   regels en de opmaak verschuift niet;
+- **de etiketontwerper** — een reeks uit geplaatste elementen is geprint: tekst staat
+  op zijn coördinaten en de uitlijning werkt;
+- **lettertype en regelhoogte** — vier lettertypen (Arial, Times New Roman,
+  Comic Sans MS, DejaVu Sans) zijn op papier te onderscheiden, en een regelhoogte
+  van 4 mm spreidt de regels zichtbaar;
 - **een afbeelding die op de maat van het etiket is getekend is scherper** dan
   dezelfde afbeelding verkleind uit een groot canvas. Vergeleken op papier:
   240×96 tegen 900×360 — de eerste is duidelijk beter. «Teken op die maat» is dus
