@@ -240,6 +240,64 @@ rotation honestly: at 90° and 270° the width and height swap.
 but also to the label's **edges and centre** — red guide lines appear on the canvas.
 Hold **Alt** to switch edge snapping off when you want to place something by eye.
 
+### Chemical structures from SMILES
+
+The element kind **`smiles`**: a SMILES string, a size in mm and a bond thickness.
+
+```json
+{"kind": "smiles", "x": 0.6, "y": 1.2, "w": 9.5, "h": 9.5,
+ "smiles": "CC(=CCCC(C)(C=C)O)C", "thickness": 2}
+```
+
+The SMILES may come from the data: `"smiles": "{4}"` pulls the structure from the
+record's fourth column, so a series prints each label with its own structure.
+
+**RDKit draws it.** We do not write our own structure renderer: parsing SMILES is
+half the job, while 2D layout (ring perception, coordinates, overlap avoidance) took
+RDKit years. The driver calls it and takes the finished PNG.
+
+#### Installing RDKit
+
+```bash
+python3 -m venv ~/.local/share/niimbot/chemvenv
+~/.local/share/niimbot/chemvenv/bin/pip install rdkit
+```
+
+No root needed. The driver looks for Python in this order: the `NIIMBOT_RDKIT`
+variable, a `chemvenv` beside the binary, `~/.local/share/niimbot/chemvenv`, then the
+system `python3`. Without RDKit, structure printing refuses with a clear message while
+everything else keeps working.
+
+#### What matters about size
+
+A 14×30 label is only **240×96 dots**. The structure must be drawn **at the required
+size** and with **thick bonds**: a downloaded structure image falls apart into dots
+when shrunk to 96 px. Verified:
+
+| Molecule | Heavy atoms | In a 96×96 square | Across the full width |
+|---|---|---|---|
+| vanillin, coumarin | 9 | legible | legible |
+| linalool, geraniol | 10–11 | legible | legible |
+| musk ketone | 15 | legible | legible |
+| cholesterol | 28 | barely guessable | **legible** |
+
+Large molecules are saved by using the label's **full width** (230 dots instead of 96).
+Heteroatom labels (O, N) are lost at 8 dots/mm — a letter takes about 6 dots.
+Stereochemistry (wedges) is indistinguishable at this size.
+
+### Print date and time
+
+Any text element accepts fields substituted **at printing time**:
+
+| Field | What it gives |
+|---|---|
+| `{дата}` | `18.09.2026` |
+| `{время}` | `00:25` |
+| `{дата-время}` | `18.09.2026 00:25` |
+
+The designer has a **"+ Date and time"** button that drops a small text element at the
+bottom edge. Handy for ingredient labels: it shows when a blend was made or opened.
+
 ### A template as data
 
 For those working through the API, a template reads plainly without the designer:

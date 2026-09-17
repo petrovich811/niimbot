@@ -244,6 +244,55 @@ after the turn she becomes the block's height. The canvas shows the turn honest:
 0.5 mm grid but to the label's **edges an' middle** — red guide lines appear on the
 canvas. Hold **Alt** to turn edge snappin' off when ye'd place her by eye.
 
+### Chemical Structures from SMILES
+
+The element kind **`smiles`**: a SMILES string, a size in mm an' a bond thickness.
+
+```json
+{"kind": "smiles", "x": 0.6, "y": 1.2, "w": 9.5, "h": 9.5,
+ "smiles": "CC(=CCCC(C)(C=C)O)C", "thickness": 2}
+```
+
+The SMILES may come from the cargo: `"smiles": "{4}"` hauls the structure out o' the
+record's fourth column, so every fleet prints each label with her own structure.
+
+**RDKit draws her.** We write no structure-drawer of our own: parsin' SMILES be half
+the voyage, while 2D layout (rings, coordinates, keepin' 'em from overlap) cost RDKit
+years. The driver hails him an' takes the finished PNG.
+
+#### Stowin' RDKit aboard
+
+```bash
+python3 -m venv ~/.local/share/niimbot/chemvenv
+~/.local/share/niimbot/chemvenv/bin/pip install rdkit
+```
+
+No root needed. The driver seeks Python in this order: the `NIIMBOT_RDKIT` variable, a
+`chemvenv` beside the binary, `~/.local/share/niimbot/chemvenv`, then the system
+`python3`. Without RDKit, printin' structures refuses with a clear word, while the rest
+sails on.
+
+#### What matters about the size
+
+A 14×30 label be but **240×96 dots**. The structure must be drawn **at the size ye
+need** an' with **thick bonds**: a fetched picture falls to dots when shrunk to 96 px.
+Checked: small molecules (9–15 heavy atoms) read in a 96×96 square, big ones
+(cholesterol, 28) only across the label's **whole width**. Heteroatom labels (O, N) be
+lost at 8 dots to the millimetre — a letter takes some 6 dots.
+
+### Printin' the Date an' Time
+
+Any text element takes fields filled **at the moment o' printin'**:
+
+| Field | What she gives |
+|---|---|
+| `{дата}` | `18.09.2026` |
+| `{время}` | `00:25` |
+| `{дата-время}` | `18.09.2026 00:25` |
+
+The draughtsman has a **«+ Date an' time»** button that drops a small element at the
+lower edge. Handy fer ingredient labels: ye see when a blend were mixed.
+
 ### A template as cargo
 
 Fer them workin' through the API, a template reads plain without the draughtsman:

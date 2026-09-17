@@ -244,6 +244,56 @@ raster van 0,5 mm getrokken, maar ook naar de **randen en het midden** van het e
 er verschijnen rode hulplijnen. **Alt** schakelt dat uit als je iets op het oog wilt
 plaatsen.
 
+### Chemische structuren uit SMILES
+
+Elementsoort **`smiles`**: een SMILES-string, een maat in mm en een bindingsdikte.
+
+```json
+{"kind": "smiles", "x": 0.6, "y": 1.2, "w": 9.5, "h": 9.5,
+ "smiles": "CC(=CCCC(C)(C=C)O)C", "thickness": 2}
+```
+
+De SMILES mag uit de gegevens komen: `"smiles": "{4}"` haalt de structuur uit de
+vierde kolom, zodat elke reeks elk etiket zijn eigen structuur geeft.
+
+**RDKit tekent haar.** Een eigen structuurtekenaar schrijven we niet: SMILES ontleden
+is het halve werk, maar 2D-opmaak (ringen, coördinaten, overlap vermijden) kostte RDKit
+jaren. De driver roept hem aan en neemt de kant-en-klare PNG.
+
+#### RDKit installeren
+
+```bash
+python3 -m venv ~/.local/share/niimbot/chemvenv
+~/.local/share/niimbot/chemvenv/bin/pip install rdkit
+```
+
+Geen root nodig. De driver zoekt Python in deze volgorde: de variabele
+`NIIMBOT_RDKIT`, een `chemvenv` naast de binary, `~/.local/share/niimbot/chemvenv`,
+daarna de systeem-`python3`. Zonder RDKit weigert het printen van structuren met een
+duidelijke melding, terwijl de rest blijft werken.
+
+#### Wat belangrijk is aan de maat
+
+Een etiket van 14×30 is maar **240×96 punten**. De structuur moet **op de vereiste
+maat** en met **dikke bindingen** getekend worden: een gedownloade afbeelding valt bij
+96 px in losse punten uiteen. Gecontroleerd: kleine moleculen (9–15 zware atomen)
+lezen in een vierkant van 96×96, grote (cholesterol, 28) alleen over de **volle
+breedte** van het etiket. Labels van heteroatomen (O, N) gaan verloren bij 8 punten
+per mm — een letter neemt ongeveer 6 punten.
+
+### Printdatum en -tijd
+
+Elk tekstelement aanvaardt velden die **op het moment van printen** worden ingevuld:
+
+| Veld | Wat het geeft |
+|---|---|
+| `{дата}` | `18.09.2026` |
+| `{время}` | `00:25` |
+| `{дата-время}` | `18.09.2026 00:25` |
+
+De ontwerper heeft een knop **«+ Datum en tijd»** die een klein tekstelement onderaan
+zet. Handig voor ingrediëntetiketten: je ziet wanneer een mengsel gemaakt is.
+
 ### Het sjabloon als gegevens
 
 Voor wie via de API werkt, is een sjabloon ook zonder ontwerper leesbaar:
