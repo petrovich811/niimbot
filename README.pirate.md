@@ -260,6 +260,27 @@ record's fourth column, so every fleet prints each label with her own structure.
 the voyage, while 2D layout (rings, coordinates, keepin' 'em from overlap) cost RDKit
 years. The driver hails him an' takes the finished PNG.
 
+#### What Be Ours an' What Be Not
+
+Structures be the **only place** where the driver leans on another crew's code:
+
+| Our driver does (Go) | RDKit does (Python) |
+|---|---|
+| the `smiles` element kind in a template | parsin' the SMILES string |
+| size in mm, turnin', bond thickness | 2D layout: rings, coordinates, overlaps |
+| fillin' in a data column: `"smiles": "{4}"` | drawin' the molecule into a PNG |
+| cache: one molecule be drawn once per fleet | |
+| findin' Python with RDKit, clear errors | |
+
+**Why we write her not ourselves.** Parsin' SMILES be half the voyage an' about a week.
+The true difficulty be **2D layout**: figurin' where the rings lie an' how to place the
+atoms so bonds neither cross nor collide. That be what RDKit an' Open Babel spent years
+on, an' a home-grown one would come out plainly worse.
+
+**Licences.** The RDKit core be **BSD 3-Clause**, the `rdkit` PyPI wrapper be **MIT**.
+Both be permissive an' fit our MIT. RDKit be **not stowed aboard**: she be installed
+apart, so the driver's licence be untouched.
+
 #### Stowin' RDKit aboard
 
 ```bash
@@ -630,6 +651,8 @@ If there be no Linux box beside the printer, other roads exist:
 
 This driver stands apart by workin' from the Linux command line an' by printin'
 **fleets o' labels out of a CSV with a template**.
+
+**Chemical structures** be drawn by **[RDKit](https://www.rdkit.org/)** (BSD 3-Clause) — she be hailed as a separate program an' be not stowed with the driver. All the rest o' this driver be our own Go code.
 
 ## Thanks
 

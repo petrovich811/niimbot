@@ -260,6 +260,27 @@ vierde kolom, zodat elke reeks elk etiket zijn eigen structuur geeft.
 is het halve werk, maar 2D-opmaak (ringen, coördinaten, overlap vermijden) kostte RDKit
 jaren. De driver roept hem aan en neemt de kant-en-klare PNG.
 
+#### Wat van ons is en wat niet
+
+Structuren zijn de **enige plek** waar de driver op andermans code leunt:
+
+| Onze driver doet (Go) | RDKit doet (Python) |
+|---|---|
+| de elementsoort `smiles` in een sjabloon | de SMILES-string ontleden |
+| maat in mm, rotatie, bindingsdikte | 2D-opmaak: ringen, coördinaten, overlappingen |
+| een gegevenskolom invullen: `"smiles": "{4}"` | de molecule naar een PNG tekenen |
+| cache: één molecule wordt één keer per reeks getekend | |
+| Python met RDKit vinden, duidelijke fouten | |
+
+**Waarom we het niet zelf schrijven.** SMILES ontleden is het halve werk en ongeveer een
+week. De echte moeilijkheid is de **2D-opmaak**: uitzoeken waar de ringen zitten en hoe
+de atomen te plaatsen zodat bindingen elkaar niet kruisen of raken. Daar hebben RDKit en
+Open Babel jaren aan besteed; een eigen versie zou duidelijk slechter zijn.
+
+**Licenties.** De RDKit-kern is **BSD 3-Clause**, de PyPI-wikkel `rdkit` is **MIT**. Beide
+zijn ruim en verenigbaar met onze MIT. RDKit wordt **niet meegeleverd**: het wordt apart
+geïnstalleerd, dus de licentie van de driver verandert niet.
+
 #### RDKit installeren
 
 ```bash
@@ -638,6 +659,8 @@ Staat er geen Linux-machine naast de printer, dan zijn er andere wegen:
 
 Deze driver onderscheidt zich doordat hij vanaf de Linux-opdrachtregel werkt en
 **reeksen etiketten uit een CSV met een sjabloon** print.
+
+**Chemische structuren** worden getekend door **[RDKit](https://www.rdkit.org/)** (BSD 3-Clause) — het wordt als apart programma aangeroepen en hoort niet bij de levering van de driver. Al het andere in deze driver is eigen Go-code.
 
 ## Dank
 
