@@ -27,8 +27,8 @@ $ niimbot text "1 gulden" "1734"
 | `niimbot rfid` | read the RFID tags o' the label roll an' the ribbon |
 | `niimbot text "line" "..."` | print text; every line be its own argument, savvy? |
 | `niimbot image file.png` | print a picture |
-| `niimbot preview "line"` | draw the mock-up **without printin'**
-| `niimbot preview --file img.png` | a mock-up from a picture: what survives the fittin' an' the threshold | — see what would go on the label |
+| `niimbot preview "line"` | draw the mock-up **without printin'** — see what would go on the label |
+| `niimbot preview --file img.png` | a mock-up from a picture: what survives the fittin' an' the threshold |
 | `niimbot testpage` | the printer's own test page (to check the line be live) |
 | `niimbot gui` | a window in yer browser: **fleets o' labels**, templates, mock-ups |
 | `niimbot scan` | hunt fer the printer over the air |
