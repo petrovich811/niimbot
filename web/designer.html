@@ -133,14 +133,20 @@
     </div>
 
     <h2>Шаблон</h2>
-    <div class="row">
+    <label>Загрузить сохранённый
       <select id="templates"><option value="">— выберите —</option></select>
-    </div>
+    </label>
+    <label>Название для сохранения
+      <input type="text" id="tpl-name" placeholder="например: Драхма Парфия">
+    </label>
     <div class="row">
-      <button id="tpl-save" class="ghost">Сохранить</button>
+      <button id="tpl-save" class="primary">Сохранить шаблон</button>
       <button id="tpl-del" class="ghost danger">Удалить</button>
-      <button id="tpl-new" class="ghost">Новый</button>
+      <button id="tpl-new" class="ghost">Очистить холст</button>
     </div>
+    <p id="tpl-msg" class="hint"></p>
+    <p class="hint">Шаблон хранит <b>и элементы</b> (что где стоит), и настройки печати.
+      Сохранённые шаблоны доступны по кнопке «обычная печать» тоже.</p>
 
     <h2>Печать</h2>
     <div class="grid">

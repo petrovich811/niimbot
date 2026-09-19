@@ -581,6 +581,7 @@ $('templates').addEventListener('change', (e) => {
   if (!opt || !opt.dataset.tpl) return;
   const t = JSON.parse(opt.dataset.tpl);
   elements = t.elements ? JSON.parse(JSON.stringify(t.elements)) : [];
+  $('tpl-name').value = t.name || '';
   if (t.length) $('length').value = t.length;
   if (t.density) $('density').value = t.density;
   if (t.label !== undefined) $('label').value = t.label;
@@ -591,9 +592,23 @@ $('templates').addEventListener('change', (e) => {
   refreshPreview();
 });
 
+function tplMsg(text, bad) {
+  $('tpl-msg').textContent = text;
+  $('tpl-msg').style.color = bad ? '#B3392F' : 'var(--green)';
+  if (text) setTimeout(() => { if ($('tpl-msg').textContent === text) $('tpl-msg').textContent = ''; }, 4000);
+}
+
 $('tpl-save').onclick = async () => {
-  const name = prompt('Название шаблона:');
-  if (!name) return;
+  const name = $('tpl-name').value.trim();
+  if (!name) {
+    tplMsg('Впишите название шаблона', true);
+    $('tpl-name').focus();
+    return;
+  }
+  if (!elements.length) {
+    tplMsg('На холсте нет ни одного элемента', true);
+    return;
+  }
   const body = {
     name: name.trim(),
     length: labelLength(),
@@ -610,11 +625,12 @@ $('tpl-save').onclick = async () => {
   });
   if (!r.ok) {
     const d = await r.json().catch(() => ({}));
-    alert(d.error || 'не удалось сохранить');
+    tplMsg(d.error || 'не удалось сохранить', true);
     return;
   }
   await loadTemplates();
-  $('templates').value = name.trim();
+  $('templates').value = name;
+  tplMsg(`шаблон «${name}» сохранён: ${elements.length} элемент(ов)`);
 };
 
 $('tpl-del').onclick = async () => {
@@ -623,13 +639,19 @@ $('tpl-del').onclick = async () => {
   if (!confirm(`Удалить шаблон «${name}»?`)) return;
   await fetch('/api/templates?name=' + encodeURIComponent(name), { method: 'DELETE' });
   await loadTemplates();
+  $('tpl-name').value = '';
+  tplMsg(`шаблон «${name}» удалён`);
 };
 
 $('tpl-new').onclick = () => {
+  if (elements.length && !confirm('Очистить холст? Несохранённое пропадёт.')) return;
   elements = [];
   $('templates').value = '';
+  $('tpl-name').value = '';
   select(-1);
+  renderCanvas();
   refreshPreview();
+  tplMsg('холст очищен');
 };
 
 // --------------------------------------------------------------------- запуск

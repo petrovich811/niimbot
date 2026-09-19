@@ -388,6 +388,26 @@ Any text element accepts fields substituted **at printing time**:
 The designer has a **"+ Date and time"** button that drops a small text element at the
 bottom edge. Handy for ingredient labels: it shows when a blend was made or opened.
 
+### Saving a template in the designer
+
+1. Build the label on the canvas — text, pictures, lines, structures.
+2. In the **"Template"** section type a name, for example `Драхма Парфия`.
+3. Press **"Save template"**. A confirmation appears under the buttons.
+
+A template keeps **both the elements** (what sits where, in which font and size) **and
+the print settings**: length, density, label type, copies, threshold. To return to it,
+pick it from the **"Load a saved one"** list.
+
+| Button | What it does |
+|---|---|
+| **Save template** | writes the canvas and settings under the given name; a same-named one is overwritten |
+| **Delete** | removes the template selected in the list |
+| **Clear the canvas** | removes every element (asks for confirmation) |
+
+Templates live in `~/.config/niimbot/templates.json` as plain JSON — they can be carried
+to another computer or edited by hand. Both the designer and the "Series" tab on the
+plain printing page use them.
+
 ### A template as data
 
 For those working through the API, a template reads plainly without the designer:

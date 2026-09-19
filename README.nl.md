@@ -348,6 +348,17 @@ Elk tekstelement aanvaardt velden die **op het moment van printen** worden ingev
 De ontwerper heeft een knop **«+ Datum en tijd»** die een klein tekstelement onderaan
 zet. Handig voor ingrediëntetiketten: je ziet wanneer een mengsel gemaakt is.
 
+### Een sjabloon bewaren in de ontwerper
+
+1. Bouw het etiket op het doek — tekst, afbeeldingen, lijnen, structuren.
+2. Typ in het vak **«Sjabloon»** een naam, bijvoorbeeld `Drachme Parthië`.
+3. Druk op **«Sjabloon bewaren»**; onder de knoppen verschijnt een bevestiging.
+
+Een sjabloon houdt **zowel de elementen** (wat waar staat, in welk lettertype en welke
+maat) **als de printinstellingen**: lengte, dichtheid, labeltype, exemplaren, drempel.
+Kies het in de lijst **«Bewaard sjabloon laden»** om er terug te keren. Bewaren, wissen
+en het doek leegmaken staan ernaast.
+
 ### Het sjabloon als gegevens
 
 Voor wie via de API werkt, is een sjabloon ook zonder ontwerper leesbaar:

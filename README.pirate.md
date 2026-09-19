@@ -347,6 +347,16 @@ Any text element takes fields filled **at the moment o' printin'**:
 The draughtsman has a **«+ Date an' time»** button that drops a small element at the
 lower edge. Handy fer ingredient labels: ye see when a blend were mixed.
 
+### Stowin' a Template in the Draughtsman
+
+1. Build the label on the canvas — words, pictures, lines, structures.
+2. In the **«Template»** berth type a name, e.g. `Drachm Parthia`.
+3. Press **«Stow the template»**; a word o' confirmation appears below the buttons.
+
+A template keeps **both the elements** (what sits where, in what font an' size) **and the
+printin' settings**: length, density, label kind, copies, threshold. To come back to her,
+pick her from the **«Haul in a stowed one»** list. Delete an' clear-the-canvas sit beside.
+
 ### A template as cargo
 
 Fer them workin' through the API, a template reads plain without the draughtsman:
