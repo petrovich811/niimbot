@@ -17,6 +17,7 @@ require (
 	github.com/soypat/seqs v0.0.0-20260125140838-2c1c6b1bd69e // indirect
 	github.com/tinygo-org/cbgo v0.0.4 // indirect
 	github.com/tinygo-org/pio v0.3.0 // indirect
+	github.com/webview/webview_go v0.0.0-20240831120633-6173450d4dd6 // indirect
 	golang.org/x/exp v0.0.0-20260727155853-b88d891fe743 // indirect
 	golang.org/x/sys v0.11.0 // indirect
 	golang.org/x/text v0.29.0 // indirect

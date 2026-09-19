@@ -383,6 +383,28 @@ Voor wie via de API werkt, is een sjabloon ook zonder ontwerper leesbaar:
 
 `/api/preview` en `/api/print` nemen dezelfde lijst aan in het veld `elements`.
 
+### Eigen venster van het programma
+
+De gewone build opent de interface in een browser. Voor een **venster in het programma
+zelf**, zonder browser, bouwt u apart:
+
+```bash
+sudo apt install libwebkit2gtk-4.1-dev   # eenmalig
+./build-webview.sh                        # bouwt ./niimbot met venster
+./niimbot gui
+```
+
+Binnenin zit de systeemengine: WebKitGTK op Linux, WebView2 op Windows, WKWebView op
+macOS. Onze HTML verandert niet: het venster laadt dezelfde ingebouwde server.
+
+**Waarom een aparte build.** Een eigen venster vraagt CGO en de WebKit-headers, dus die
+build **kruiscompileert niet naar Windows**. De gewone (`go build`) blijft CGO-vrij en
+bouwt overal met één opdracht — die gaat dan ook in de releases.
+
+**Over Ubuntu 24.04:** de vensterbibliotheek vraagt om `webkit2gtk-4.0`, dat 24.04 niet
+meer levert (alleen 4.1). `build-webview.sh` zet een tussenstuk uit
+`third_party/pkgconfig` in, in plaats van andermans bibliotheek te patchen.
+
 ## Etiketten met een afbeelding
 
 ```bash

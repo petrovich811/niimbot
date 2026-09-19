@@ -12,6 +12,7 @@ import (
 	"image"
 	"image/png"
 	"io/fs"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
@@ -590,22 +591,41 @@ func startGUI(address string, port int, openBrowserFlag, appMode, verbose bool) 
 	addr := fmt.Sprintf("127.0.0.1:%d", port)
 	url := "http://" + addr
 	fmt.Printf("Интерфейс: %s\n", url)
-	fmt.Println("Остановить — Ctrl+C")
-
-	if openBrowserFlag {
-		go func() {
-			time.Sleep(300 * time.Millisecond)
-			if appMode && openAppWindow(url) {
-				fmt.Println("Открываю отдельным окном (режим приложения)")
-				return
-			}
-			if appMode {
-				fmt.Println("Браузера на Chromium не нашлось — открываю обычный")
-			}
-			openBrowser(url)
-		}()
+	if nativeWindowAvailable() {
+		fmt.Println("Сборка с собственным окном")
 	}
-	return http.ListenAndServe(addr, mux)
+
+	// Сервер уходит в отдельную горутину: собственное окно (сборка с тегом
+	// webview) требует главного потока, да и ждать его закрытия надо здесь.
+	serverErr := make(chan error, 1)
+	go func() {
+		if err := http.ListenAndServe(addr, mux); err != nil {
+			serverErr <- err
+		}
+	}()
+	if err := waitForServer(addr, 5*time.Second); err != nil {
+		return err
+	}
+
+	if !openBrowserFlag {
+		fmt.Println("Остановить — Ctrl+C")
+		return <-serverErr
+	}
+	return runGUIWindow(url, appMode)
+}
+
+// waitForServer ждёт, пока сервер начнёт принимать соединения.
+func waitForServer(addr string, timeout time.Duration) error {
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		conn, err := net.DialTimeout("tcp", addr, 300*time.Millisecond)
+		if err == nil {
+			conn.Close()
+			return nil
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	return fmt.Errorf("сервер не поднялся на %s за %s", addr, timeout)
 }
 
 // openBrowser открывает браузер (как в OCRTAG).

@@ -432,6 +432,28 @@ For those working through the API, a template reads plainly without the designer
 
 `/api/preview` and `/api/print` accept the same list in the `elements` field.
 
+### The program's own window
+
+The ordinary build opens the interface in a browser. For a **window inside the program
+itself**, with no browser at all, build separately:
+
+```bash
+sudo apt install libwebkit2gtk-4.1-dev   # once
+./build-webview.sh                        # builds ./niimbot with a window
+./niimbot gui
+```
+
+Inside is the system engine: WebKitGTK on Linux, WebView2 on Windows, WKWebView on
+macOS. Our HTML does not change: the window loads the same built-in server.
+
+**Why a separate build.** A native window needs CGO and the WebKit headers, so that
+build **does not cross-compile to Windows**. The ordinary one (`go build`) stays
+CGO-free and builds anywhere with one command — that is what goes into releases.
+
+**About Ubuntu 24.04:** the window library asks for `webkit2gtk-4.0`, which 24.04 no
+longer ships (only 4.1 remains). `build-webview.sh` supplies a shim from
+`third_party/pkgconfig` instead of patching somebody else's library.
+
 ## Labels with a picture
 
 ```bash

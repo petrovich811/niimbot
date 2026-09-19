@@ -355,6 +355,26 @@ python3 -m venv ~/.local/share/niimbot/chemvenv
 
 `/api/preview` 和 `/api/print` 在 `elements` 字段中接受同样的列表。
 
+### 程序自带的窗口
+
+普通构建会在浏览器中打开界面。如果需要**程序自己的窗口**、完全不使用浏览器，请单独编译：
+
+```bash
+sudo apt install libwebkit2gtk-4.1-dev   # 只需一次
+./build-webview.sh                        # 编译出带窗口的 ./niimbot
+./niimbot gui
+```
+
+内部使用系统引擎：Linux 上是 WebKitGTK，Windows 上是 WebView2，macOS 上是 WKWebView。
+我们的 HTML 不变：窗口加载的是同一个内嵌服务器。
+
+**为什么要单独编译。** 自带窗口需要 CGO 和 WebKit 头文件，因此这种构建**无法交叉编译到
+Windows**。普通构建（`go build`）不需要 CGO，在任何机器上一条命令即可完成 —— 发布用的
+正是它。
+
+**关于 Ubuntu 24.04：** 窗口库要求 `webkit2gtk-4.0`，而 24.04 已不再提供（只剩 4.1）。
+`build-webview.sh` 会用 `third_party/pkgconfig` 里的中间文件替代，而不去改别人的库。
+
 ## 带图片的标签
 
 ```bash

@@ -375,6 +375,28 @@ transferri aut manu corrigi possunt.
 
 Eundem indicem `/api/preview` et `/api/print` in campo `elements` accipiunt.
 
+### Fenestra propria programmatis
+
+Aedificatio ordinaria interfaciem in navigatro aperit. Si **fenestra in ipso
+programmate** necessaria est, sine navigatro omnino, separatim aedifica:
+
+```bash
+sudo apt install libwebkit2gtk-4.1-dev   # semel
+./build-webview.sh                        # aedificat ./niimbot cum fenestra
+./niimbot gui
+```
+
+Intus est machina systematis: WebKitGTK in Linux, WebView2 in Windows, WKWebView in
+macOS. HTML noster non mutatur: fenestra eundem servitorem insitum legit.
+
+**Cur separatim aedificandum.** Fenestra propria CGO et capitula WebKit postulat, ita
+illa aedificatio **in Windows transcompilari non potest**. Ordinaria autem (`go build`)
+sine CGO manet et ubique uno mandato aedificatur — ea in editiones it.
+
+**De Ubuntu 24.04:** bibliotheca fenestrae `webkit2gtk-4.0` postulat, quod 24.04 iam non
+praebet (solum 4.1 restat). `build-webview.sh` internuntium e `third_party/pkgconfig`
+substituit, ne bibliotheca aliena corrigatur.
+
 ## Pittacium cum imagine
 
 ```bash
