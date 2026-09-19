@@ -3,7 +3,7 @@
 [![Go](https://img.shields.io/badge/Go-1.24+-00ADD8?logo=go)](https://go.dev)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-**Other languages:** [Русский](README.md) · [Nederlands](README.nl.md) · [简体中文](README.zh-CN.md) · [Pirate 🏴‍☠️](README.pirate.md)
+**Other languages:** [Русский](README.md) · [Nederlands](README.nl.md) · [简体中文](README.zh-CN.md) · [Latina](README.la.md) · [Pirate 🏴‍☠️](README.pirate.md)
 
 A Bluetooth LE driver for the **NIIMBOT N1** thermal-transfer label printer,
 written in Go. Prints text and images from the command line, reports printer

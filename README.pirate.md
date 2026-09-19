@@ -3,7 +3,7 @@
 [![Go](https://img.shields.io/badge/Go-1.24+-00ADD8?logo=go)](https://go.dev)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-**Other tongues:** [English](README.en.md) · [Русский](README.md) · [Nederlands](README.nl.md) · [简体中文](README.zh-CN.md)
+**Other tongues:** [English](README.en.md) · [Русский](README.md) · [Nederlands](README.nl.md) · [简体中文](README.zh-CN.md) · [Latina](README.la.md)
 
 > Avast! This here be a joke translation, matey. The commands, flags, codes an'
 > numbers be true as the north star — only the talkin' be pirate. The proper

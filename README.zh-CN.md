@@ -3,7 +3,7 @@
 [![Go](https://img.shields.io/badge/Go-1.24+-00ADD8?logo=go)](https://go.dev)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-**其他语言：** [English](README.en.md) · [Русский](README.md) · [Nederlands](README.nl.md) · [Pirate 🏴‍☠️](README.pirate.md)
+**其他语言：** [English](README.en.md) · [Русский](README.md) · [Nederlands](README.nl.md) · [Latina](README.la.md) · [Pirate 🏴‍☠️](README.pirate.md)
 
 通过蓝牙 LE 驱动热转印标签打印机 **NIIMBOT N1**。使用 Go 编写，在命令行
 中运行：打印文字和图片、显示打印机状态，还能在打印前预览版面。
