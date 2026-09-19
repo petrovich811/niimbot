@@ -1180,3 +1180,64 @@ func TestTemplateRoundTrip(t *testing.T) {
 		t.Fatal("на этикетке из сохранённого шаблона ничего не напечаталось")
 	}
 }
+
+// Автоподбор кегля: если кегль не задан, он подбирается под рамку элемента.
+// Именно это делает универсальный шаблон монеты пригодным для названий
+// разной длины.
+func TestAutoFontSize(t *testing.T) {
+	short, err := RenderTemplate(LabelTemplate{
+		LengthMM: 30,
+		Elements: []Element{{Kind: "text", X: 0.15, Y: 1, W: 29.7, H: 4.2,
+			Text: "Асарий", Align: "center", Family: "Liberation Sans Narrow"}},
+	}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	long, err := RenderTemplate(LabelTemplate{
+		LengthMM: 30,
+		Elements: []Element{{Kind: "text", X: 0.15, Y: 1, W: 29.7, H: 4.2,
+			Text:  "Тетрадрахма. Македония. Александр III Великий",
+			Align: "center", Family: "Liberation Sans Narrow"}},
+	}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	shortMinX, shortMaxX := inkColumns(short)
+	longMinX, longMaxX := inkColumns(long)
+	_, shortMinY := inkRows(short)
+	_, longMinY := inkRows(long)
+
+	// Короткий текст должен выйти заметно выше (то есть кегль крупнее).
+	if shortMinY <= longMinY {
+		t.Fatalf("короткое название не крупнее длинного: высота %d против %d",
+			shortMinY, longMinY)
+	}
+	// И оба обязаны остаться внутри этикетки с запасом.
+	for name, b := range map[string][2]int{
+		"короткое": {shortMinX, shortMaxX},
+		"длинное":  {longMinX, longMaxX},
+	} {
+		if b[0] < 5 || b[1] > 234 {
+			t.Fatalf("%s название вышло за поля: %d..%d (этикетка 0..239)", name, b[0], b[1])
+		}
+	}
+}
+
+// Заданный кегль должен перебивать автоподбор.
+func TestExplicitFontWins(t *testing.T) {
+	img, err := RenderTemplate(LabelTemplate{
+		LengthMM: 30,
+		Elements: []Element{{Kind: "text", X: 0.15, Y: 1, W: 29.7, H: 4.2,
+			Text: "Асарий", FontMM: 2.0, Align: "center"}},
+	}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Измеряем высоту самой надписи, а не её положение на этикетке.
+	minY, maxY := inkRows(img)
+	if h := maxY - minY; h > 24 {
+		t.Fatalf("надпись с явным кеглем 2 мм заняла %d точек по высоте (кегль 2 мм = 16 точек) — "+
+			"похоже, автоподбор её всё-таки увеличил", h)
+	}
+}

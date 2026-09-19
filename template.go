@@ -110,14 +110,32 @@ func drawTextElement(img *image.Gray, el Element, row []string, now time.Time) e
 	if strings.TrimSpace(text) == "" {
 		return nil
 	}
-	fontMM := el.FontMM
-	if fontMM <= 0 {
-		fontMM = 2.5 // разумное умолчание, если кегль не задан
-	}
 	fontPath, err := pickFont(el.Family, el.Bold)
 	if err != nil {
 		return err
 	}
+
+	lines := strings.Split(text, "\n")
+	fontMM := el.FontMM
+	if fontMM <= 0 {
+		// Кегль не задан — подбираем его под рамку элемента. Именно это
+		// делает один шаблон пригодным для названий разной длины: короткое
+		// выйдет крупно, длинное мельче, но влезет целиком и без обрезки.
+		boxW := mmToDotsMin(el.W)
+		if boxW <= 0 {
+			boxW = img.Bounds().Dx() - mmToDots(el.X)
+		}
+		boxH := mmToDotsMin(el.H)
+		if boxH <= 0 {
+			boxH = img.Bounds().Dy() - mmToDots(el.Y)
+		}
+		size, err := fitFontSize(fontPath, lines, boxW, boxH)
+		if err != nil {
+			return err
+		}
+		fontMM = size / dotsPerMM
+	}
+
 	// 1 мм = 8 точек, поэтому кегль в точках изображения — это мм × 8.
 	face, err := loadFace(fontPath, fontMM*dotsPerMM)
 	if err != nil {
@@ -125,7 +143,6 @@ func drawTextElement(img *image.Gray, el Element, row []string, now time.Time) e
 	}
 	defer face.Close()
 
-	lines := strings.Split(text, "\n")
 	metrics := face.Metrics()
 	ascent := metrics.Ascent.Ceil()
 
@@ -141,6 +158,17 @@ func drawTextElement(img *image.Gray, el Element, row []string, now time.Time) e
 	x0 := int(math.Round(el.X * dotsPerMM))
 	y0 := int(math.Round(el.Y * dotsPerMM))
 	boxW := int(math.Round(el.W * dotsPerMM))
+
+	// Если задана высота рамки, ставим блок по её середине. Иначе при
+	// автоподборе кегля блок «прыгал» бы: у короткого названия кегль
+	// крупнее, и просвет до второй строки схлопывался.
+	if el.H > 0 {
+		boxH := mmToDotsMin(el.H)
+		blockH := lineH * len(lines)
+		if boxH > blockH {
+			y0 += (boxH - blockH) / 2
+		}
+	}
 
 	// Поворот: надпись рисуется на отдельном холсте и поворачивается целиком.
 	// Так текст идёт поперёк этикетки — нужно для кабельных бирок.
@@ -181,6 +209,35 @@ func drawTextElement(img *image.Gray, el Element, row []string, now time.Time) e
 
 	drawTextLines(img, face, lines, x0, y0, lineH, boxW, ascent, el.Align, 1)
 	return nil
+}
+
+// fitMarginDots — запас при автоподборе кегля, в точках.
+//
+// Без него автоподбор упирает текст в самые края рамки: на печати это
+// означает обрезку, если этикетка ляжет чуть со сдвигом. 6 точек = 0,75 мм.
+const fitMarginDots = 6
+
+// fitFontSize подбирает наибольший кегль, при котором текст влезает
+// в рамку boxW × boxH (в точках). Размер возвращается в точках изображения.
+func fitFontSize(fontPath string, lines []string, boxW, boxH int) (float64, error) {
+	boxW -= 2 * fitMarginDots
+	if boxW < 4 || boxH < 4 {
+		return 4, nil
+	}
+	best := 4.0
+	for size := float64(boxH); size >= 4; size -= 0.5 {
+		face, err := loadFace(fontPath, size)
+		if err != nil {
+			continue
+		}
+		w, h := measureBlock(face, lines)
+		face.Close()
+		if w <= boxW && h <= boxH {
+			best = size
+			break
+		}
+	}
+	return best, nil
 }
 
 // drawTextLines рисует строки надписи с выравниванием внутри рамки boxW.
