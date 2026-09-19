@@ -90,9 +90,15 @@ go build -o niimbot .
 
 ```bash
 ./niimbot gui              # serves http://127.0.0.1:8765 an' opens yer browser
+./niimbot gui --app        # a window o' her own, no tabs nor address bar
 ./niimbot gui --port 9000  # some other port
 ./niimbot gui --no-browser # the server alone, no window
 ```
+
+**App mode** (`--app`) opens the window in a berth o' her own — no tabs, no address
+bar, no menu, like a proper desktop craft. Sails with Chromium browsers (Chrome,
+Chromium, Edge, Brave, Vivaldi); if there be none, the driver quietly opens the
+default browser. No new ballast.
 
 The window be **baked into the binary herself** (`embed` + `net/http`) — no GUI
 framework, no extra ballast in the hold. The printin' logic be not writ twice:

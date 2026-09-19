@@ -458,7 +458,7 @@ func apiPreview(w http.ResponseWriter, req printRequest) {
 // --------------------------------------------------------------------------
 
 // startGUI поднимает веб-интерфейс и открывает браузер.
-func startGUI(address string, port int, openBrowserFlag, verbose bool) error {
+func startGUI(address string, port int, openBrowserFlag, appMode, verbose bool) error {
 	guiVerbose = verbose
 	mux := http.NewServeMux()
 
@@ -595,6 +595,13 @@ func startGUI(address string, port int, openBrowserFlag, verbose bool) error {
 	if openBrowserFlag {
 		go func() {
 			time.Sleep(300 * time.Millisecond)
+			if appMode && openAppWindow(url) {
+				fmt.Println("Открываю отдельным окном (режим приложения)")
+				return
+			}
+			if appMode {
+				fmt.Println("Браузера на Chromium не нашлось — открываю обычный")
+			}
 			openBrowser(url)
 		}()
 	}
@@ -603,16 +610,81 @@ func startGUI(address string, port int, openBrowserFlag, verbose bool) error {
 
 // openBrowser открывает браузер (как в OCRTAG).
 func openBrowser(url string) {
-	var cmd string
-	var args []string
+	cmd, args := browserCommand(url)
+	if cmd == "" {
+		return
+	}
+	_ = exec.Command(cmd, args...).Start()
+}
+
+// browserCommand — команда открытия адреса в браузере по умолчанию.
+func browserCommand(url string) (string, []string) {
 	switch runtime.GOOS {
 	case "darwin":
-		cmd = "open"
+		return "open", []string{url}
 	case "windows":
-		cmd, args = "rundll32", []string{"url.dll,FileProtocolHandler"}
+		return "rundll32", []string{"url.dll,FileProtocolHandler", url}
 	default:
-		cmd = "xdg-open"
+		return "xdg-open", []string{url}
 	}
-	args = append(args, url)
-	_ = exec.Command(cmd, args...).Start()
+}
+
+// appBrowsers — браузеры на движке Chromium: только они умеют режим
+// приложения — отдельное окно без вкладок, адресной строки и меню.
+var appBrowsers = map[string][]string{
+	"linux": {
+		"google-chrome", "google-chrome-stable", "chromium", "chromium-browser",
+		"microsoft-edge", "microsoft-edge-stable", "brave-browser", "vivaldi",
+	},
+	"darwin": {
+		"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+		"/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+		"/Applications/Chromium.app/Contents/MacOS/Chromium",
+	},
+	"windows": {
+		`C:\Program Files\Google\Chrome\Application\chrome.exe`,
+		`C:\Program Files (x86)\Google\Chrome\Application\chrome.exe`,
+		`C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe`,
+		`C:\Program Files\Microsoft\Edge\Application\msedge.exe`,
+	},
+}
+
+// appWindowCommand подбирает браузер и аргументы для окна в режиме приложения.
+//
+// Второе значение — пусто, если подходящего браузера не нашлось: тогда
+// вызывающий открывает обычный браузер.
+func appWindowCommand(url string) (string, []string) {
+	osName := runtime.GOOS
+	if osName != "darwin" && osName != "windows" {
+		osName = "linux"
+	}
+	for _, name := range appBrowsers[osName] {
+		path := name
+		if osName != "windows" {
+			if found, err := exec.LookPath(name); err == nil {
+				path = found
+			} else if _, err := os.Stat(name); err != nil {
+				continue // нет ни в PATH, ни по этому пути
+			}
+		} else if _, err := os.Stat(name); err != nil {
+			continue
+		}
+		// --app даёт окно без интерфейса браузера; размер задаём сами,
+		// иначе окно откроется маленьким.
+		return path, []string{"--app=" + url, "--window-size=1280,900"}
+	}
+	return "", nil
+}
+
+// openAppWindow открывает интерфейс отдельным окном без вкладок и адресной
+// строки. Возвращает false, если браузера на Chromium не нашлось.
+func openAppWindow(url string) bool {
+	cmd, args := appWindowCommand(url)
+	if cmd == "" {
+		return false
+	}
+	if err := exec.Command(cmd, args...).Start(); err != nil {
+		return false
+	}
+	return true
 }

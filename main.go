@@ -47,6 +47,7 @@ var (
 	imageFile = flagSet.String("file", "", "файл картинки для макета (команда preview)")
 	port      = flagSet.Int("port", 8765, "порт веб-интерфейса (команда gui); 8080 занят SearXNG")
 	noBrowser = flagSet.Bool("no-browser", false, "не открывать браузер (команда gui)")
+	appMode   = flagSet.Bool("app", false, "открыть отдельным окном без вкладок и адресной строки (команда gui)")
 )
 
 func main() {
@@ -90,7 +91,7 @@ func main() {
 		fmt.Println(mac)
 		return
 	case "gui":
-		if err := startGUI(*addr, *port, !*noBrowser, *verbose); err != nil {
+		if err := startGUI(*addr, *port, !*noBrowser, *appMode, *verbose); err != nil {
 			fatal(err)
 		}
 		return

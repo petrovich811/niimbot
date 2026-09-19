@@ -85,9 +85,14 @@ go build -o niimbot .
 
 ```bash
 ./niimbot gui              # 启动 http://127.0.0.1:8765 并打开浏览器
+./niimbot gui --app        # 单独的窗口，没有标签页和地址栏
 ./niimbot gui --port 9000  # 换一个端口
 ./niimbot gui --no-browser # 只启动服务
 ```
+
+**应用模式**（`--app`）会把界面开在独立窗口里 —— 没有标签页、地址栏和菜单，就像普通
+桌面程序。适用于 Chromium 系浏览器（Chrome、Chromium、Edge、Brave、Vivaldi）；
+如果找不到，驱动会安静地打开默认浏览器。不需要新的依赖。
 
 界面**内嵌在程序里**（`embed` + `net/http`）—— 不需要 GUI 框架，也没有额外依赖。
 打印逻辑不重复实现：界面调用的是与命令行相同的函数。

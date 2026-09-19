@@ -88,9 +88,15 @@ go build -o niimbot .
 
 ```bash
 ./niimbot gui              # http://127.0.0.1:8765 et navigatrum aperit
+./niimbot gui --app        # fenestra propria sine tabulis et linea inscriptionis
 ./niimbot gui --port 9000  # alius portus
 ./niimbot gui --no-browser # solum servitor
 ```
+
+**Modus applicationis** (`--app`) interfaciem in fenestra propria aperit — sine tabulis,
+sine linea inscriptionis, sine menu, ut programma mensale ordinarium. Cum navigatris
+Chromii (Chrome, Chromium, Edge, Brave, Vivaldi) laborat; si tale non est, rector
+navigatrum solitum tacite aperit. Nulla nova dependentia.
 
 Interfacies **in ipso programmate inclusa** est (`embed` + `net/http`) — nullae
 bibliothecae graphicae, nullae dependentiae externae. Logica impressionis non

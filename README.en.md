@@ -86,9 +86,15 @@ go build -o niimbot .
 
 ```bash
 ./niimbot gui              # serves http://127.0.0.1:8765 and opens the browser
+./niimbot gui --app        # a separate window with no tabs or address bar
 ./niimbot gui --port 9000  # another port
 ./niimbot gui --no-browser # server only
 ```
+
+**App mode** (`--app`) opens the interface in a window of its own — no tabs, no address
+bar, no menu, like an ordinary desktop application. It works with Chromium-based
+browsers (Chrome, Chromium, Edge, Brave, Vivaldi); without one the driver quietly opens
+the default browser. No new dependencies.
 
 The interface is **embedded in the binary** (`embed` + `net/http`) — no GUI
 framework, no extra dependencies. Printing logic is not duplicated: the UI calls

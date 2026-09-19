@@ -87,9 +87,15 @@ go build -o niimbot .
 
 ```bash
 ./niimbot gui              # serveert http://127.0.0.1:8765 en opent de browser
+./niimbot gui --app        # een apart venster zonder tabbladen of adresbalk
 ./niimbot gui --port 9000  # een andere poort
 ./niimbot gui --no-browser # alleen de server
 ```
+
+**Appmodus** (`--app`) opent de interface in een eigen venster — zonder tabbladen,
+adresbalk of menu, als een gewoon bureaubladprogramma. Werkt met Chromium-browsers
+(Chrome, Chromium, Edge, Brave, Vivaldi); is die er niet, dan opent de driver stil de
+standaardbrowser. Geen nieuwe afhankelijkheden.
 
 De interface zit **in de binary zelf** (`embed` + `net/http`) — geen GUI-framework,
 geen extra afhankelijkheden. De printlogica wordt niet gedupliceerd: de interface
