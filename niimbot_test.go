@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/json"
 	"image"
 	"image/color"
 	"image/draw"
@@ -1128,5 +1129,54 @@ func TestRenderTemplateSmilesElement(t *testing.T) {
 	}, nil)
 	if err == nil {
 		t.Fatal("структура без размеров: ожидалась ошибка")
+	}
+}
+
+// Шаблон настроек должен сохранять и возвращать элементы конструктора.
+// Раньше поля elements в структуре не было, и сохранённые шаблоны выходили
+// пустыми: в файле лежали одни настройки без единого элемента.
+func TestTemplateRoundTrip(t *testing.T) {
+	tpl := Template{
+		Name:      "проба",
+		Length:    30,
+		Density:   2,
+		Threshold: 200,
+		Elements: []Element{
+			{Kind: "text", X: 0.4, Y: 2.8, W: 29.2, Text: "Драхма. Парфия. Артабан II",
+				FontMM: 1.8, Align: "center", Family: "DejaVu Sans", Bold: true},
+			{Kind: "text", X: 0.4, Y: 6.3, W: 29.2, Text: "12-38 н.э. XF",
+				FontMM: 2.6, Align: "center", Family: "Arial"},
+		},
+	}
+
+	data, err := json.Marshal(tpl)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var back Template
+	if err := json.Unmarshal(data, &back); err != nil {
+		t.Fatal(err)
+	}
+
+	if len(back.Elements) != 2 {
+		t.Fatalf("после сохранения элементов %d, ожидалось 2", len(back.Elements))
+	}
+	if back.Elements[0].Text != "Драхма. Парфия. Артабан II" {
+		t.Fatalf("текст первого элемента потерялся: %q", back.Elements[0].Text)
+	}
+	if back.Elements[1].FontMM != 2.6 || back.Elements[1].Family != "Arial" {
+		t.Fatalf("настройки второго элемента потерялись: %+v", back.Elements[1])
+	}
+	if back.Threshold != 200 {
+		t.Fatalf("порог потерялся: %d", back.Threshold)
+	}
+
+	// И шаблон с этими элементами действительно рисуется.
+	img, err := RenderTemplate(LabelTemplate{LengthMM: back.Length, Elements: back.Elements}, nil)
+	if err != nil {
+		t.Fatalf("шаблон из файла не рисуется: %v", err)
+	}
+	if minX, _ := inkColumns(img); minX < 0 {
+		t.Fatal("на этикетке из сохранённого шаблона ничего не напечаталось")
 	}
 }

@@ -90,14 +90,17 @@ func (j *job) snapshot() job {
 
 // Template — сохранённый набор настроек под типовую задачу.
 type Template struct {
-	Name     string  `json:"name"`
-	Length   float64 `json:"length"`
-	Font     float64 `json:"font"`
-	Density  int     `json:"density"`
-	Label    string  `json:"label"`
-	Copies   int     `json:"copies"`
-	Flip     bool    `json:"flip"`
-	Template string  `json:"template"`
+	Name      string    `json:"name"`
+	Length    float64   `json:"length"`
+	Font      float64   `json:"font"`
+	Density   int       `json:"density"`
+	Label     string    `json:"label"`
+	Copies    int       `json:"copies"`
+	Flip      bool      `json:"flip"`
+	Threshold int       `json:"threshold,omitempty"`
+	Template  string    `json:"template"`
+	Colorder  string    `json:"colorder,omitempty"`
+	Elements  []Element `json:"elements,omitempty"` // шаблон из конструктора
 }
 
 func templatesPath() string {
