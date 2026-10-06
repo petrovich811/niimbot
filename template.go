@@ -42,6 +42,7 @@ type Element struct {
 	LineMM float64 `json:"line,omitempty"`   // высота строки в мм; 0 — по шрифту
 	Family string  `json:"family,omitempty"` // семейство шрифта; пусто — по умолчанию
 	Bold   bool    `json:"bold,omitempty"`   // жирное начертание
+	Heavy  bool    `json:"heavy,omitempty"`  // обводка букв: ещё жирнее
 	Rotate int     `json:"rotate,omitempty"` // поворот: 0, 90, 180 или 270
 	Align  string  `json:"align,omitempty"`  // left | center | right (внутри рамки X..X+W)
 
@@ -129,6 +130,9 @@ func drawTextElement(img *image.Gray, el Element, row []string, now time.Time) e
 		if boxH <= 0 {
 			boxH = img.Bounds().Dy() - mmToDots(el.Y)
 		}
+		if el.Heavy {
+			boxW -= 2 // обводка расширяет текст на точку с каждой стороны
+		}
 		size, err := fitFontSize(fontPath, lines, boxW, boxH)
 		if err != nil {
 			return err
@@ -183,7 +187,7 @@ func drawTextElement(img *image.Gray, el Element, row []string, now time.Time) e
 			blockW = 1
 		}
 		tmp := whiteCanvas(blockW, blockH)
-		drawTextLines(tmp, face, lines, 0, 0, lineH, blockW, ascent, "left", 0)
+		drawTextLines(tmp, face, lines, 0, 0, lineH, blockW, ascent, "left", 0, el.Heavy)
 		rot := rotateGray(tmp, angle)
 
 		// Выравнивание считаем по повёрнутому блоку.
@@ -207,7 +211,7 @@ func drawTextElement(img *image.Gray, el Element, row []string, now time.Time) e
 		return nil
 	}
 
-	drawTextLines(img, face, lines, x0, y0, lineH, boxW, ascent, el.Align, 1)
+	drawTextLines(img, face, lines, x0, y0, lineH, boxW, ascent, el.Align, 1, el.Heavy)
 	return nil
 }
 
@@ -244,7 +248,7 @@ func fitFontSize(fontPath string, lines []string, boxW, boxH int) (float64, erro
 // step — шаг между строками в единицах lineH (нужен, когда строка одна
 // и рисовать её надо на своём холсте).
 func drawTextLines(dst *image.Gray, face font.Face, lines []string,
-	x0, y0, lineH, boxW, ascent int, align string, step int) {
+	x0, y0, lineH, boxW, ascent int, align string, step int, heavy bool) {
 	if step < 1 {
 		step = 1
 	}
@@ -273,6 +277,14 @@ func drawTextLines(dst *image.Gray, face font.Face, lines []string,
 			Dot:  fixed.P(x, y),
 		}
 		d.DrawString(line)
+		if heavy {
+			// Обводка: та же строка со сдвигом на точку по кругу. Шрифт уже
+			// жирный, а этого мало — на этикетке хочется ещё плотнее.
+			for _, off := range [][2]int{{-1, 0}, {1, 0}, {0, -1}, {0, 1}} {
+				d.Dot = fixed.P(x+off[0], y+off[1])
+				d.DrawString(line)
+			}
+		}
 	}
 }
 
